@@ -136,8 +136,19 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   ])
 
   const settingsMap = Object.fromEntries(shippingSettings.map((s: any) => [s.key, s.value]))
-  const freeShippingThreshold = settingsMap.free_shipping_above ? Number(settingsMap.free_shipping_above) : null
-  const setBundle = serialize(bundle) as any
+  const freeShippingThreshold = settingsMap.free_shipping_above ? Number(settingsMap.free_shipping_above) : 2000
+
+  let setBundle = serialize(bundle) as any
+  if (!setBundle && relatedProducts.length > 0) {
+    setBundle = {
+      id: "dynamic-set",
+      discountPct: 10,
+      items: serialize(relatedProducts.slice(0, 2)).map((rp: any) => ({
+        id: rp.id,
+        product: rp,
+      })),
+    }
+  }
 
   const productUrl = `${SITE_URL}/shop/${product.slug}`
   const priceValidUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString().slice(0, 10)

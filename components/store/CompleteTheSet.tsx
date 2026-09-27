@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Check, ChevronDown } from "lucide-react"
+import { Check, ChevronDown, Sparkles, Layers, ShoppingBag } from "lucide-react"
 import { useCartStore } from "@/store/useCartStore"
 import { toast } from "sonner"
 
@@ -62,13 +62,27 @@ export default function CompleteTheSet({
     return sum + Number(v?.price ?? p.price)
   }, 0)
   const subtotal = Number(primaryPrice) + companionTotal
-  const discountPct = bundle.discountPct ? Number(bundle.discountPct) : 0
-  const discount = discountPct > 0 ? Math.round(subtotal * discountPct / 100) : 0
+  const discountPct = bundle.discountPct ? Number(bundle.discountPct) : 10
+  const discount = selectedCompanions.length > 0 ? Math.round(subtotal * (discountPct / 100)) : 0
   const total = subtotal - discount
+
+  const selectAll = () => {
+    const newSelected: Record<string, boolean> = {}
+    const newChosen: Record<string, string> = { ...chosenVariant }
+    for (const p of companions) {
+      newSelected[p.id] = true
+      if (!newChosen[p.id]) {
+        const firstInStock = p.variants.find((v) => v.stock > 0)
+        if (firstInStock) newChosen[p.id] = firstInStock.id
+      }
+    }
+    setSelected(newSelected)
+    setChosenVariant(newChosen)
+  }
 
   const addAllToCart = () => {
     if (selectedCompanions.length === 0) {
-      toast.error("Select at least one companion piece to add.")
+      toast.error("Please select at least one matching piece.")
       return
     }
     // Validate all have a chosen in-stock variant
@@ -99,7 +113,7 @@ export default function CompleteTheSet({
       })
     }
 
-    toast.success(`${selectedCompanions.length} piece${selectedCompanions.length > 1 ? "s" : ""} added to your bag!`, {
+    toast.success(`Bundle added! ${selectedCompanions.length} matching piece${selectedCompanions.length > 1 ? "s" : ""} in bag!`, {
       description: selectedCompanions.map((p) => p.name).join(" · "),
     })
   }
@@ -107,22 +121,33 @@ export default function CompleteTheSet({
   if (companions.length === 0) return null
 
   return (
-    <div className="mt-8 border border-bunny-border rounded-xl overflow-hidden">
-      <div className="bg-bunny-muted/40 px-4 py-3 border-b border-bunny-border">
-        <p className="text-xs font-bold uppercase tracking-widest text-bunny-navy">Complete the Set</p>
-        <p className="text-xs text-bunny-text-muted mt-0.5">Add matching pieces — each piece has its own size and ships together.</p>
+    <div className="mt-8 border border-[#EDE8DF] rounded-3xl overflow-hidden bg-white shadow-xs">
+      <div className="bg-gradient-to-r from-[#F0F7FB] to-[#FFF0F3] px-5 py-4 border-b border-[#EDE8DF] flex items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-[#1E3E5B] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#FF758F]" />
+            <span>Complete The Look & Save</span>
+          </p>
+          <p className="text-xs text-[#6C7A89] mt-0.5">
+            Add matching accessories or nursery essentials & get {discountPct}% off the bundle!
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={selectAll}
+          className="text-xs font-bold text-[#4A8DB7] hover:underline whitespace-nowrap"
+        >
+          Select All
+        </button>
       </div>
 
-      <div className="divide-y divide-bunny-border">
+      <div className="divide-y divide-[#EDE8DF]">
         {companions.map((product) => {
           const isOn = !!selected[product.id]
           const inStockVariants = product.variants.filter((v) => v.stock > 0)
           const outOfStock = inStockVariants.length === 0
-          const companionColors = Array.from(new Set(inStockVariants.map((v) => v.color)))
-          const matchingColors = primaryColors.filter((c) => companionColors.includes(c))
           const currentVariant = product.variants.find((v) => v.id === chosenVariant[product.id])
 
-          // Build unique sizes + colors for selects
           const sizes = Array.from(new Set(inStockVariants.map((v) => v.size)))
           const selectedSize = currentVariant?.size || sizes[0]
           const colorsForSize = inStockVariants.filter((v) => v.size === selectedSize).map((v) => v.color)
@@ -138,133 +163,116 @@ export default function CompleteTheSet({
           }
 
           return (
-            <div key={product.id} className={`px-4 py-4 transition-colors ${isOn ? "bg-bunny-blue/5" : "bg-white"}`}>
+            <div key={product.id} className={`px-5 py-4 transition-colors ${isOn ? "bg-[#F0F7FB]/50" : "bg-white"}`}>
               <div className="flex items-center gap-3">
                 {/* Toggle checkbox */}
                 <button
+                  type="button"
                   onClick={() => !outOfStock && toggle(product.id)}
                   disabled={outOfStock}
-                  className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                  className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
                     outOfStock
-                      ? "border-bunny-border opacity-40 cursor-not-allowed"
+                      ? "border-[#EDE8DF] opacity-40 cursor-not-allowed"
                       : isOn
-                      ? "bg-bunny-blue border-bunny-blue"
-                      : "border-bunny-border hover:border-bunny-blue"
+                      ? "bg-[#4A8DB7] border-[#4A8DB7]"
+                      : "border-[#EDE8DF] hover:border-[#4A8DB7]"
                   }`}
                 >
-                  {isOn && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                  {isOn && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                 </button>
 
                 {/* Image */}
                 {product.images[0] && (
-                  <div className="relative w-12 h-14 rounded overflow-hidden shrink-0">
-                    <Image src={product.images[0].url} alt={product.name} fill className="object-cover" sizes="48px" />
+                  <div className="relative w-14 h-16 rounded-xl overflow-hidden shrink-0 border border-[#EDE8DF] bg-[#FAF9F5]">
+                    <Image src={product.images[0].url} alt={product.name} fill sizes="56px" className="object-cover" />
                   </div>
                 )}
 
-                {/* Info */}
+                {/* Details */}
                 <div className="flex-1 min-w-0">
-                  <Link href={`/shop/${product.slug}`} className="text-sm font-medium hover:text-bunny-blue transition-colors line-clamp-1">
-                    {product.name}
-                  </Link>
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/shop/${product.slug}`}
+                      className="text-xs sm:text-sm font-bold text-[#1E3E5B] hover:text-[#4A8DB7] transition-colors truncate"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="font-mono text-xs font-bold text-[#1E3E5B] shrink-0">
+                      ৳{Number(product.price).toLocaleString()}
+                    </span>
+                  </div>
+
                   {outOfStock ? (
-                    <p className="text-xs text-bunny-error mt-0.5">Out of stock</p>
+                    <span className="text-[11px] text-[#6C7A89]">Out of stock</span>
                   ) : (
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <p className="text-xs text-bunny-text-muted">
-                        +৳{(currentVariant?.price != null ? Number(currentVariant.price) : product.price).toLocaleString()}
-                      </p>
-                      {matchingColors.length > 0 && (
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-bunny-blue bg-bunny-blue/10 px-1.5 py-0.5 rounded">
-                          Matches · {matchingColors.join(", ")}
-                        </span>
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      {sizes.length > 1 && (
+                        <div className="relative">
+                          <select
+                            value={selectedSize}
+                            onChange={(e) => handleSizeChange(e.target.value)}
+                            className="text-xs bg-white border border-[#EDE8DF] rounded-lg px-2 py-1 pr-6 focus:outline-none focus:border-[#4A8DB7] text-[#1E3E5B] appearance-none"
+                          >
+                            {sizes.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-[#6C7A89] absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      )}
+
+                      {uniqueColors.length > 1 && (
+                        <div className="relative">
+                          <select
+                            value={currentVariant?.color || uniqueColors[0]}
+                            onChange={(e) => handleColorChange(e.target.value)}
+                            className="text-xs bg-white border border-[#EDE8DF] rounded-lg px-2 py-1 pr-6 focus:outline-none focus:border-[#4A8DB7] text-[#1E3E5B] appearance-none"
+                          >
+                            {uniqueColors.map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-[#6C7A89] absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Variant pickers — only when toggled on */}
-              {isOn && !outOfStock && (
-                <div className="mt-3 ml-8 flex flex-wrap gap-2">
-                  {sizes.length > 1 && (
-                    <div className="relative">
-                      <select
-                        value={selectedSize}
-                        onChange={(e) => handleSizeChange(e.target.value)}
-                        className="appearance-none pl-3 pr-8 py-1.5 text-xs border border-bunny-border rounded bg-white focus:outline-none focus:ring-1 focus:ring-bunny-blue cursor-pointer"
-                      >
-                        {sizes.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-bunny-text-muted" />
-                    </div>
-                  )}
-                  {sizes.length === 1 && (
-                    <span className="px-3 py-1.5 text-xs border border-bunny-border rounded bg-white">{sizes[0]}</span>
-                  )}
-
-                  {uniqueColors.length > 1 && (
-                    <div className="relative">
-                      <select
-                        value={currentVariant?.color || uniqueColors[0]}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                        className="appearance-none pl-3 pr-8 py-1.5 text-xs border border-bunny-border rounded bg-white focus:outline-none focus:ring-1 focus:ring-bunny-blue cursor-pointer"
-                      >
-                        {uniqueColors.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-bunny-text-muted" />
-                    </div>
-                  )}
-                  {uniqueColors.length === 1 && (
-                    <span className="px-3 py-1.5 text-xs border border-bunny-border rounded bg-white">{uniqueColors[0]}</span>
-                  )}
-                </div>
-              )}
             </div>
           )
         })}
       </div>
 
-      {/* Footer: total + add button */}
-      <div className="px-4 py-4 bg-bunny-muted/40 border-t border-bunny-border space-y-3">
-        {/* Price breakdown */}
-        <div className="text-xs text-bunny-text-muted space-y-1">
-          <div className="flex justify-between">
-            <span>{primaryName}</span>
-            <span className="font-mono">৳{primaryPrice.toLocaleString()}</span>
-          </div>
-          {selectedCompanions.map((p) => {
-            const v = p.variants.find((vv) => vv.id === chosenVariant[p.id])
-            const price = v?.price != null ? Number(v.price) : p.price
-            return (
-              <div key={p.id} className="flex justify-between">
-                <span>+ {p.name} ({v?.size})</span>
-                <span className="font-mono">৳{price.toLocaleString()}</span>
-              </div>
-            )
-          })}
-          {discount > 0 && (
-            <div className="flex justify-between text-bunny-success font-medium">
-              <span>{discountPct}% bundle discount</span>
-              <span className="font-mono">−৳{discount.toLocaleString()}</span>
+      {/* Footer / Add Set Action */}
+      {selectedCompanions.length > 0 && (
+        <div className="p-5 bg-[#FAF9F5] border-t border-[#EDE8DF] space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[#6C7A89] font-medium">
+              Bundle: {primaryName} + {selectedCompanions.length} matching piece{selectedCompanions.length > 1 ? "s" : ""}
+            </span>
+            <div className="text-right">
+              {discount > 0 && (
+                <span className="font-mono line-through text-[#6C7A89] text-[11px] mr-1.5">
+                  ৳{subtotal.toLocaleString()}
+                </span>
+              )}
+              <span className="font-mono font-black text-sm text-[#1E3E5B]">
+                ৳{total.toLocaleString()}
+              </span>
             </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between pt-1 border-t border-bunny-border">
-          <div>
-            <p className="text-xs text-bunny-text-muted">{selectedCompanions.length + 1}-piece set total</p>
-            <p className="text-lg font-mono font-bold text-bunny-navy">৳{total.toLocaleString()}</p>
           </div>
+
           <button
+            type="button"
             onClick={addAllToCart}
-            disabled={selectedCompanions.length === 0}
-            className="px-5 py-2.5 bg-bunny-navy text-white text-xs font-bold uppercase tracking-widest hover:bg-bunny-blue transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-full"
+            className="w-full py-3.5 bg-[#FF758F] hover:bg-[#e05f77] text-white text-xs font-bold uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-[#FF758F]/20"
           >
-            Add pieces to bag
+            <ShoppingBag className="w-4 h-4" />
+            <span>Add Matching Pieces to Bag (+ {discountPct}% Off)</span>
           </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }
