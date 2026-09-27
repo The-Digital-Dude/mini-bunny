@@ -75,12 +75,16 @@ export default function ChildSwitcher({ className = "" }: { className?: string }
       fitPreference: fitPref,
     })
 
-    if (newChild) {
+    if (newChild && newChild.babyName) {
       toast.success(`Profile saved for ${newChild.babyName}! +100 VIP Points earned 🎁`)
       setName("")
       setBirthday("")
       setShowAddForm(false)
       setIsOpen(false)
+    } else {
+      setIsOpen(false)
+      setShowAddForm(false)
+      setShowAuthModal(true)
     }
   }
 
@@ -91,7 +95,7 @@ export default function ChildSwitcher({ className = "" }: { className?: string }
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-xs ${
-            activeChild
+            activeChild?.babyName
               ? "bg-[#FFF0F3] border-[#FF758F]/30 text-[#FF758F] hover:bg-[#FFE3E8]"
               : "bg-[#FAF9F5] border-[#EDE8DF] text-[#1E3E5B] hover:bg-[#F0F7FB] hover:text-[#4A8DB7]"
           }`}
@@ -99,7 +103,7 @@ export default function ChildSwitcher({ className = "" }: { className?: string }
         >
           <Baby className="w-3.5 h-3.5" />
           <span className="truncate max-w-[120px] sm:max-w-[160px]">
-            {activeChild ? `${activeChild.babyName} (${activeChild.recommendedSize})` : "Add Baby Profile"}
+            {activeChild?.babyName ? `${activeChild.babyName} (${activeChild.recommendedSize || "0-3M"})` : "Add Baby Profile"}
           </span>
           <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         </button>
