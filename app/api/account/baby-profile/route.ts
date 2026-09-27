@@ -6,31 +6,17 @@ export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ profile: null })
+      return NextResponse.json({ error: "Unauthorized", profiles: [] }, { status: 401 })
     }
 
-    // Check if custom field or tag exists for customer
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { customerTags: true },
+    const profiles = await prisma.babyProfile.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "asc" },
     })
 
-    if (!user) {
-      return NextResponse.json({ profile: null })
-    }
-
-    // Retrieve from custom customer tags if saved
-    const babyTag = user.customerTags.find((t) => t.tag.startsWith("baby:"))
-    if (babyTag) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(babyTag.tag.replace("baby:", "")))
-        return NextResponse.json({ profile: decoded })
-      } catch {}
-    }
-
-    return NextResponse.json({ profile: null })
-  } catch {
-    return NextResponse.json({ profile: null })
+    return NextResponse.json({ profiles })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed to fetch baby profiles" }, { status: 500 })
   }
 }
 
@@ -38,59 +24,120 @@ export async function POST(req: Request) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ ok: true, note: "Saved locally" })
+      return NextResponse.json({ error: "Unauthorized. Please sign in to save your baby profile." }, { status: 401 })
     }
 
-    const data = await req.json()
-    if (!data?.babyName) {
-      return NextResponse.json({ error: "Baby name is required" }, { status: 400 })
+    const body = await req.json()
+    const { babyName, birthday, gender, fitPreference, parentNotes, children } = body
+
+    // Support single profile creation or batch update
+    if (Array.isArray(children)) {
+      // Sync children array
+      for (const child of children) {
+        if (!child.babyName || !child.birthday) continue
+        const bDate = new Date(child.birthday)
+        if (isNaN(bDate.getTime())) continue
+
+        const existing = child.id && !child.id.startsWith("child_")
+          ? await prisma.babyProfile.findUnique({ where: { id: child.id } }).catch(() => null)
+          : null
+
+        if (existing && existing.userId === session.user.id) {
+          await prisma.babyProfile.update({
+            where: { id: child.id },
+            data: {
+              babyName: child.babyName.trim(),
+              birthday: bDate,
+              gender: child.gender || "Surprise",
+              fitPreference: child.fitPreference || "standard",
+              parentNotes: child.parentNotes || null,
+            },
+          })
+        } else {
+          await prisma.babyProfile.create({
+            data: {
+              userId: session.user.id,
+              babyName: child.babyName.trim(),
+              birthday: bDate,
+              gender: child.gender || "Surprise",
+              fitPreference: child.fitPreference || "standard",
+              parentNotes: child.parentNotes || null,
+            },
+          })
+        }
+      }
+    } else if (babyName && birthday) {
+      const bDate = new Date(birthday)
+      if (isNaN(bDate.getTime())) {
+        return NextResponse.json({ error: "Invalid birthdate" }, { status: 400 })
+      }
+
+      const created = await prisma.babyProfile.create({
+        data: {
+          userId: session.user.id,
+          babyName: babyName.trim(),
+          birthday: bDate,
+          gender: gender || "Surprise",
+          fitPreference: fitPreference || "standard",
+          parentNotes: parentNotes || null,
+        },
+      })
+
+      // Award 100 VIP Points (৳50 value) for adding baby profile if not already given
+      const existingPoints = await prisma.loyaltyPoint.findFirst({
+        where: {
+          userId: session.user.id,
+          type: "BABY_PROFILE",
+        },
+      }).catch(() => null)
+
+      if (!existingPoints) {
+        await prisma.loyaltyPoint.create({
+          data: {
+            userId: session.user.id,
+            points: 100,
+            type: "BABY_PROFILE",
+            description: `Welcome bonus for adding ${babyName}'s profile`,
+          },
+        }).catch(() => {})
+      }
+
+      return NextResponse.json({ profile: created, pointsAwarded: !existingPoints })
     }
 
-    const payload = JSON.stringify({
-      babyName: data.babyName,
-      birthday: data.birthday,
-      gender: data.gender,
-      parentNotes: data.parentNotes,
-      savedAt: new Date().toISOString(),
+    const all = await prisma.babyProfile.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "asc" },
     })
 
-    // Store in CustomerTag for persistence without rigid table migrations
-    const tagString = `baby:${encodeURIComponent(payload)}`
-
-    // Remove older baby tags
-    await prisma.customerTag.deleteMany({
-      where: {
-        userId: session.user.id,
-        tag: { startsWith: "baby:" },
-      },
-    }).catch(() => {})
-
-    await prisma.customerTag.create({
-      data: {
-        userId: session.user.id,
-        tag: tagString,
-      },
-    }).catch(() => {})
-
-    return NextResponse.json({ ok: true, profile: data })
+    return NextResponse.json({ profiles: all })
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Failed to save profile" }, { status: 500 })
+    return NextResponse.json({ error: err.message || "Failed to save baby profile" }, { status: 500 })
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
   try {
     const session = await auth()
-    if (session?.user?.id) {
-      await prisma.customerTag.deleteMany({
-        where: {
-          userId: session.user.id,
-          tag: { startsWith: "baby:" },
-        },
-      }).catch(() => {})
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ ok: true })
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+
+    if (id) {
+      await prisma.babyProfile.deleteMany({
+        where: { id, userId: session.user.id },
+      })
+    } else {
+      await prisma.babyProfile.deleteMany({
+        where: { userId: session.user.id },
+      })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed to delete profile" }, { status: 500 })
   }
 }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
+import AuthPromptModal from "@/components/store/AuthPromptModal"
 
 export default function ParentProfileCard({ compact = false }: { compact?: boolean }) {
   const {
@@ -31,6 +32,9 @@ export default function ParentProfileCard({ compact = false }: { compact?: boole
     removeChild,
     isLoaded,
     hasProfile,
+    isAuthenticated,
+    showAuthModal,
+    setShowAuthModal,
   } = useParentProfile()
 
   const [isAddingNew, setIsAddingNew] = useState(false)
@@ -44,6 +48,10 @@ export default function ParentProfileCard({ compact = false }: { compact?: boole
   const [formNotes, setFormNotes] = useState("")
 
   const startAdd = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
     setFormName("")
     setFormBirthday("")
     setFormGender("Surprise")
@@ -88,8 +96,10 @@ export default function ParentProfileCard({ compact = false }: { compact?: boole
         fitPreference: formFit,
         parentNotes: formNotes,
       })
-      toast.success(`Added ${created.babyName} to your family! +100 VIP Points (৳50 value) 🎁`)
-      setIsAddingNew(false)
+      if (created) {
+        toast.success(`Added ${created.babyName} to your family! +100 VIP Points (৳50 value) 🎁`)
+        setIsAddingNew(false)
+      }
     }
   }
 
@@ -388,6 +398,13 @@ export default function ParentProfileCard({ compact = false }: { compact?: boole
           </div>
         </form>
       )}
+
+      {/* Dedicated Auth Gate Modal */}
+      <AuthPromptModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectUrl="/account"
+      />
     </div>
   )
 }

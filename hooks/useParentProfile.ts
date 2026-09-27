@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export type BabyGender = "Boy" | "Girl" | "Surprise"
 export type FitPreference = "slim" | "standard" | "roomy"
@@ -89,9 +90,43 @@ export function useParentProfile() {
   const [children, setChildren] = useState<BabyChild[]>([])
   const [activeChildId, setActiveChildId] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const authed = !!session?.user
+      setIsAuthenticated(authed)
+
+      if (authed) {
+        // Fetch from Postgres database
+        const res = await fetch("/api/account/baby-profile").catch(() => null)
+        if (res && res.ok) {
+          const data = await res.json()
+          if (data.profiles && Array.isArray(data.profiles) && data.profiles.length > 0) {
+            const parsedChildren = data.profiles.map((p: any) => {
+              const bStr = typeof p.birthday === "string" ? p.birthday.split("T")[0] : new Date(p.birthday).toISOString().split("T")[0]
+              const ageMeta = calculateAgeFromBirthday(bStr, p.fitPreference || "standard")
+              return {
+                id: p.id,
+                babyName: p.babyName,
+                birthday: bStr,
+                gender: (p.gender as BabyGender) || "Surprise",
+                fitPreference: (p.fitPreference as FitPreference) || "standard",
+                parentNotes: p.parentNotes || "",
+                ...ageMeta,
+              }
+            })
+            setChildren(parsedChildren)
+            setActiveChildId(parsedChildren[0]?.id ?? null)
+            return
+          }
+        }
+      }
+
+      // Fallback local storage
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed: StoredProfilesData = JSON.parse(stored)
@@ -104,7 +139,7 @@ export function useParentProfile() {
         return
       }
 
-      // Check legacy single-child profile
+      // Legacy single profile fallback
       const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
       if (legacy) {
         const parsed = JSON.parse(legacy)
@@ -120,10 +155,9 @@ export function useParentProfile() {
         }
         setChildren([child])
         setActiveChildId(child.id)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ children: [child], activeChildId: child.id }))
       }
     } catch {
-      // Ignore parse/storage issues
+      // Storage fallback
     } finally {
       setIsLoaded(true)
     }
@@ -156,7 +190,6 @@ export function useParentProfile() {
         STORAGE_KEY,
         JSON.stringify({ children: updatedChildren, activeChildId: activeId })
       )
-      // Keep legacy key synced with active child for backward compatibility
       const active = updatedChildren.find((c) => c.id === activeId) || updatedChildren[0]
       if (active) {
         localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(active))
@@ -174,6 +207,11 @@ export function useParentProfile() {
     fitPreference?: FitPreference
     parentNotes?: string
   }) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return null
+    }
+
     const ageMeta = calculateAgeFromBirthday(data.birthday, data.fitPreference || "standard")
     const newChild: BabyChild = {
       id: `child_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -188,11 +226,17 @@ export function useParentProfile() {
     const updated = [...children, newChild]
     persist(updated, newChild.id)
 
-    // Sync to backend for logged in users
+    // Sync to Postgres database
     fetch("/api/account/baby-profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ children: updated, activeChildId: newChild.id }),
+      body: JSON.stringify({
+        babyName: data.babyName,
+        birthday: data.birthday,
+        gender: data.gender,
+        fitPreference: data.fitPreference,
+        parentNotes: data.parentNotes,
+      }),
     }).catch(() => {})
 
     return newChild
@@ -208,6 +252,11 @@ export function useParentProfile() {
       parentNotes?: string
     }>
   ) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+
     const updated = children.map((c) => {
       if (c.id !== childId) return c
       const nextBirthday = data.birthday ?? c.birthday
@@ -225,7 +274,7 @@ export function useParentProfile() {
     fetch("/api/account/baby-profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ children: updated, activeChildId }),
+      body: JSON.stringify({ children: updated }),
     }).catch(() => {})
   }
 
@@ -234,10 +283,8 @@ export function useParentProfile() {
     const nextActive = activeChildId === childId ? (updated[0]?.id ?? null) : activeChildId
     persist(updated, nextActive)
 
-    fetch("/api/account/baby-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ children: updated, activeChildId: nextActive }),
+    fetch(`/api/account/baby-profile?id=${encodeURIComponent(childId)}`, {
+      method: "DELETE",
     }).catch(() => {})
   }
 
@@ -247,7 +294,6 @@ export function useParentProfile() {
     }
   }
 
-  // Backward compatibility saveProfile (updates active or adds first child)
   const saveProfile = (data: {
     babyName: string
     birthday: string
@@ -279,10 +325,13 @@ export function useParentProfile() {
   return {
     children,
     activeChild,
-    profile: activeChild, // backward-compatible alias
+    profile: activeChild,
     activeChildId,
     isLoaded,
+    isAuthenticated,
     hasProfile: !!activeChild?.babyName,
+    showAuthModal,
+    setShowAuthModal,
     addChild,
     updateChild,
     removeChild,
