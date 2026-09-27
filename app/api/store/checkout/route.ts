@@ -142,13 +142,28 @@ export async function POST(req: Request) {
     }
 
     // Validate store credit redemption
+    // Validate store credit redemption
     let serverCreditDiscount = 0
     if (userId && storeCreditRedeemed > 0) {
       const credit = await prisma.storeCredit.findUnique({ where: { userId } })
       serverCreditDiscount = Math.min(storeCreditRedeemed, Number(credit?.balance ?? 0))
     }
 
-    const serverTotal = Math.max(0, serverSubtotal + serverShippingCharge + serverTaxAmount + serverGiftWrapCharge - autoDiscountAmount - serverLoyaltyDiscount - serverCreditDiscount - serverCouponDiscount)
+    // Validate Gift Card redemption
+    let serverGiftCardDiscount = 0
+    let validatedGiftCardId: string | null = null
+    if (giftCardCode) {
+      const gc = await prisma.giftCard.findUnique({
+        where: { code: giftCardCode.trim().toUpperCase() },
+      })
+      if (gc && gc.isActive && (!gc.expiresAt || new Date(gc.expiresAt) >= new Date()) && Number(gc.balance) > 0) {
+        const remainingBeforeGC = Math.max(0, serverSubtotal + serverShippingCharge + serverTaxAmount + serverGiftWrapCharge - autoDiscountAmount - serverLoyaltyDiscount - serverCreditDiscount - serverCouponDiscount)
+        serverGiftCardDiscount = Math.min(Number(gc.balance), remainingBeforeGC, clientGCDiscount || Number(gc.balance))
+        validatedGiftCardId = gc.id
+      }
+    }
+
+    const serverTotal = Math.max(0, serverSubtotal + serverShippingCharge + serverTaxAmount + serverGiftWrapCharge - autoDiscountAmount - serverLoyaltyDiscount - serverCreditDiscount - serverCouponDiscount - serverGiftCardDiscount)
 
     const order = await prisma.$transaction(async (tx) => {
       // Re-check stock inside transaction to prevent race conditions
@@ -180,6 +195,7 @@ export async function POST(req: Request) {
           subtotal: serverSubtotal,
           shippingCharge: serverShippingCharge,
           discount: Math.max(0, autoDiscountAmount + serverCouponDiscount),
+          giftCardDiscount: serverGiftCardDiscount,
           couponId: validatedCouponId || null,
           deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
           note: note || null,
@@ -230,18 +246,21 @@ export async function POST(req: Request) {
     }
 
     // Deduct gift card balance
-    if (giftCardCode && clientGCDiscount > 0) {
-      prisma.giftCard.update({
-        where: { code: giftCardCode.toUpperCase() },
-        data: { balance: { decrement: clientGCDiscount } },
-      }).then((gc) => {
-        if (Number(gc.balance) <= 0) {
-          prisma.giftCard.update({ where: { id: gc.id }, data: { isActive: false, redeemedAt: new Date() } }).catch(() => {})
+    if (validatedGiftCardId && serverGiftCardDiscount > 0) {
+      try {
+        const updatedGc = await prisma.giftCard.update({
+          where: { id: validatedGiftCardId },
+          data: { balance: { decrement: serverGiftCardDiscount } },
+        })
+        if (Number(updatedGc.balance) <= 0) {
+          await prisma.giftCard.update({ where: { id: validatedGiftCardId }, data: { isActive: false, redeemedAt: new Date() } }).catch(() => {})
         }
-        prisma.giftCardTransaction.create({
-          data: { giftCardId: gc.id, orderId: order.id, amount: clientGCDiscount, type: "REDEEM" },
+        await prisma.giftCardTransaction.create({
+          data: { giftCardId: validatedGiftCardId, orderId: order.id, amount: serverGiftCardDiscount, type: "REDEEM" },
         }).catch(() => {})
-      }).catch(() => {})
+      } catch (gcErr) {
+        console.error("Gift card deduction error:", gcErr)
+      }
     }
 
     // Deduct loyalty points used

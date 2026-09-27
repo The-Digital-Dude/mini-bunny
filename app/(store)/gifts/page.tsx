@@ -61,6 +61,13 @@ export default async function GiftsPage() {
       tag: "1-Year",
       link: "/shop?size=12-18M",
     },
+    {
+      title: "Digital Gift Cards",
+      desc: "Instant delivery with luxury themes, personalized note & 1-year validity.",
+      icon: "🎁",
+      tag: "Instant ৳",
+      link: "/gift-cards",
+    },
   ]
 
   return (
@@ -90,7 +97,7 @@ export default async function GiftsPage() {
       <div className="container mx-auto px-4 max-w-6xl mt-12 space-y-16">
         
         {/* Gift Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {giftCategories.map((c, i) => (
             <FadeIn key={c.title} delay={i * 0.1}>
               <Link

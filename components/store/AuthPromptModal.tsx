@@ -1,32 +1,64 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
-import { Sparkles, Heart, Baby, CheckCircle2, X, ArrowRight, LogIn, UserPlus } from "lucide-react"
+import { Sparkles, Baby, CheckCircle2, X, LogIn, UserPlus } from "lucide-react"
 
 export default function AuthPromptModal({
   isOpen,
   onClose,
   redirectUrl = "/account",
+  title = "Sign In to Add Baby Profile",
+  description = "Create a free parent account to save your baby's milestones, unlock smart size recommendations, and earn VIP rewards!",
 }: {
   isOpen: boolean
   onClose: () => void
   redirectUrl?: string
+  title?: string
+  description?: string
 }) {
-  if (!isOpen) return null
+  const [mounted, setMounted] = useState(false)
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Close on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose()
+      }
+    }
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown)
+      document.body.style.overflow = "hidden"
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      document.body.style.overflow = "unset"
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen || !mounted) return null
+
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl border border-[#EDE8DF] shadow-2xl p-6 md:p-8 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md bg-white rounded-3xl border border-[#EDE8DF] shadow-2xl p-6 sm:p-8 overflow-hidden max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Pastel Aura Background */}
+        {/* Pastel Glow Background */}
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-gradient-to-br from-[#FFF0F3] to-[#F0F7FB] blur-2xl pointer-events-none" />
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-[#6C7A89] hover:text-[#1E3E5B] hover:bg-[#FAF9F5] rounded-full transition-colors"
+          className="absolute top-4 right-4 p-2 text-[#6C7A89] hover:text-[#1E3E5B] hover:bg-[#FAF9F5] rounded-full transition-colors z-10"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -44,28 +76,28 @@ export default function AuthPromptModal({
               <span>Mini Bunny VIP Club Perk</span>
             </div>
             <h3 className="text-xl font-heading font-black text-[#1E3E5B]">
-              Sign In to Add Baby Profile
+              {title}
             </h3>
             <p className="text-xs text-[#6C7A89] leading-relaxed">
-              Create a free parent account to save your baby&apos;s milestones, unlock smart size recommendations, and earn VIP rewards!
+              {description}
             </p>
           </div>
 
           {/* VIP Perks List */}
-          <div className="bg-[#FAF9F5] border border-[#EDE8DF] rounded-2xl p-3.5 text-left space-y-2.5 text-xs text-[#1E3E5B]">
-            <div className="flex items-center gap-2">
+          <div className="bg-[#FAF9F5] border border-[#EDE8DF] rounded-2xl p-4 text-left space-y-2.5 text-xs text-[#1E3E5B]">
+            <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#FF758F] shrink-0" />
               <span>
                 Earn <strong>100 VIP Points (৳50 value)</strong> on your first profile
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#4A8DB7] shrink-0" />
               <span>
                 Personalized <strong>exact size picks</strong> across every outfit
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
                 Automatic <strong>birthday month treats</strong> & milestone vouchers
@@ -97,4 +129,6 @@ export default function AuthPromptModal({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

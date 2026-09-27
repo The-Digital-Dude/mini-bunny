@@ -3,6 +3,7 @@ import Link from "next/link"
 import Image from "next/image"
 import ProductCard from "@/components/store/ProductCard"
 import HomeAgeFilter from "@/components/store/HomeAgeFilter"
+import CommunityPhotoWall from "@/components/store/CommunityPhotoWall"
 import { BunnyIcon } from "@/components/store/BunnyLogo"
 import {
   Sparkles,
@@ -64,13 +65,17 @@ export default async function StoreHomepage() {
   const serializedProducts = serialize(allProducts)
   const featuredProducts = serializedProducts.filter((p: any) => p.isFeatured)
 
-  // 5 Main Category Hub Visual Configs
-  const categoryThemes: Record<string, { badge: string; bgGradient: string; textClass: string }> = {
-    "baby-clothing": { badge: "GOTS Organic", bgGradient: "from-[#F0F7FB] to-[#FAF9F5]", textClass: "text-[#4A8DB7]" },
-    "nursery-sleep": { badge: "Safe Sleep", bgGradient: "from-[#FFF0F3] to-[#FAF9F5]", textClass: "text-[#FF758F]" },
-    "feeding-teething": { badge: "BPA-Free Food Grade", bgGradient: "from-[#FFF9F0] to-[#FAF9F5]", textClass: "text-[#E67E22]" },
-    "bath-care": { badge: "Tear-Free & Plush", bgGradient: "from-[#EBF8F2] to-[#FAF9F5]", textClass: "text-[#2ECC71]" },
-    "gifts-bundles": { badge: "Baby Shower Ready", bgGradient: "from-[#F3E8FF] to-[#FAF9F5]", textClass: "text-[#9B51E0]" },
+  // 9 Core Category Department Visual Configs
+  const categoryThemes: Record<string, { badge: string; icon: string; bgGradient: string; textClass: string }> = {
+    "newborn-essentials": { badge: "0–6M Essentials", icon: "👶", bgGradient: "from-[#FFF0F3] to-[#FAF9F5]", textClass: "text-[#FF758F]" },
+    "baby-clothing": { badge: "GOTS Organic 0–5Y", icon: "👕", bgGradient: "from-[#F0F7FB] to-[#FAF9F5]", textClass: "text-[#4A8DB7]" },
+    "feeding-nursing": { badge: "100% BPA-Free", icon: "🍼", bgGradient: "from-[#FFF9F0] to-[#FAF9F5]", textClass: "text-[#E67E22]" },
+    "baby-safety": { badge: "Pediatrician Safe", icon: "🚼", bgGradient: "from-[#F0FDF4] to-[#FAF9F5]", textClass: "text-[#16A34A]" },
+    "nursery-storage": { badge: "Nursery Decor", icon: "🏡", bgGradient: "from-[#FAF5FF] to-[#FAF9F5]", textClass: "text-[#9333EA]" },
+    "baby-care-hygiene": { badge: "Hypoallergenic", icon: "🧴", bgGradient: "from-[#E0F2FE] to-[#FAF9F5]", textClass: "text-[#0284C7]" },
+    "toys-learning": { badge: "Montessori Sensory", icon: "🧸", bgGradient: "from-[#FEF3C7] to-[#FAF9F5]", textClass: "text-[#D97706]" },
+    "baby-travel-essentials": { badge: "Travel Ergonomic", icon: "🚗", bgGradient: "from-[#EEF2FF] to-[#FAF9F5]", textClass: "text-[#4F46E5]" },
+    "gift-collections": { badge: "Luxury Hampers", icon: "🎁", bgGradient: "from-[#FFF1F2] to-[#FAF9F5]", textClass: "text-[#E11D48]" },
   }
 
   // Verified parent reviews
@@ -233,26 +238,27 @@ export default async function StoreHomepage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: 5 MAIN CATEGORY HUBS
+          SECTION 2: 9 MAIN CATEGORY DEPARTMENTS
       ───────────────────────────────────────────────────────────── */}
       <section className="py-16 md:py-20 bg-white border-y border-[#EDE8DF]">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[#4A8DB7] flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> Explore by Category
+              <Sparkles className="w-3.5 h-3.5" /> 9 Baby & Kids Departments
             </span>
             <h2 className="text-3xl md:text-4xl font-heading font-black text-[#1E3E5B]">
-              Made for Every Special Moment
+              Explore by Category
             </h2>
             <p className="text-sm text-[#6C7A89]">
-              From cozy newborn sleepwear to baby shower gifts and nursery essentials.
+              From newborn nursery essentials to feeding, safety gear, toys, travel, and luxury gift hampers.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
             {rootCategories.map((cat) => {
               const theme = categoryThemes[cat.slug] || {
                 badge: "Boutique Essential",
+                icon: "👶",
                 bgGradient: "from-[#F0F7FB] to-[#FAF9F5]",
                 textClass: "text-[#4A8DB7]",
               }
@@ -264,36 +270,46 @@ export default async function StoreHomepage() {
                   href={`/shop?category=${cat.slug}`}
                   className="group relative flex flex-col rounded-3xl overflow-hidden border border-[#EDE8DF] bg-[#FAF9F5] hover:border-[#4A8DB7] hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-white">
+                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-white">
                     <Image
                       src={img}
                       alt={cat.name}
                       fill
-                      sizes="(max-width: 768px) 50vw, 20vw"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/95 text-[#1E3E5B] border border-[#EDE8DF] shadow-xs">
-                        {theme.badge}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-white/95 text-[#1E3E5B] font-bold border border-[#EDE8DF] shadow-xs flex items-center gap-1">
+                        <span>{theme.icon}</span>
+                        <span>{theme.badge}</span>
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-4 flex flex-col flex-1 justify-between space-y-2">
+                  <div className="p-5 flex flex-col flex-1 justify-between space-y-3">
                     <div>
-                      <h3 className="font-heading font-black text-sm text-[#1E3E5B] group-hover:text-[#4A8DB7] transition-colors">
-                        {cat.name}
+                      <h3 className="font-heading font-black text-base text-[#1E3E5B] group-hover:text-[#4A8DB7] transition-colors flex items-center justify-between">
+                        <span>{cat.name}</span>
+                        <ArrowRight className="w-4 h-4 text-[#6C7A89] group-hover:text-[#4A8DB7] group-hover:translate-x-1 transition-transform" />
                       </h3>
                       {cat.children && cat.children.length > 0 && (
-                        <p className="text-[11px] text-[#6C7A89] mt-0.5 line-clamp-1">
-                          {cat.children.map((c: any) => c.name).join(", ")}
-                        </p>
+                        <div className="flex flex-wrap gap-1 mt-2.5">
+                          {cat.children.slice(0, 4).map((c: any) => (
+                            <span
+                              key={c.id}
+                              className="text-[10px] font-medium bg-white text-[#6C7A89] px-2 py-0.5 rounded-md border border-[#EDE8DF]"
+                            >
+                              {c.name}
+                            </span>
+                          ))}
+                          {cat.children.length > 4 && (
+                            <span className="text-[10px] font-bold text-[#4A8DB7] px-1 py-0.5">
+                              +{cat.children.length - 4} more
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <span className="text-xs font-bold text-[#4A8DB7] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      <span>Explore</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
                   </div>
                 </Link>
               )
@@ -380,7 +396,7 @@ export default async function StoreHomepage() {
                   key={bundle.id}
                   className="group rounded-3xl overflow-hidden border border-[#EDE8DF] bg-white p-5 shadow-sm hover:shadow-xl hover:border-[#FF758F]/40 transition-all flex flex-col justify-between"
                 >
-                  <div className="space-y-4">
+                  <Link href={`/bundles/${bundle.slug || bundle.id}`} className="space-y-4 block">
                     <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#FAF9F5] border border-[#EDE8DF]">
                       <Image
                         src={bundle.image || "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=800&auto=format&fit=crop"}
@@ -404,7 +420,7 @@ export default async function StoreHomepage() {
                         {bundle.description}
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="pt-5 mt-4 border-t border-[#EDE8DF] flex items-center justify-between">
                     <div>
@@ -419,7 +435,7 @@ export default async function StoreHomepage() {
                     </div>
 
                     <Link
-                      href="/shop"
+                      href={`/bundles/${bundle.slug || bundle.id}`}
                       className="px-4 py-2 bg-[#FF758F] hover:bg-[#e05f77] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
                     >
                       <Gift className="w-3.5 h-3.5" />
@@ -538,40 +554,7 @@ export default async function StoreHomepage() {
       ───────────────────────────────────────────────────────────── */}
       <section className="py-16 md:py-20 bg-white border-t border-[#EDE8DF]">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FF758F] flex items-center justify-center gap-1.5">
-              <InstagramIcon className="w-4 h-4" /> @minibunny.bd
-            </span>
-            <h2 className="text-2xl md:text-3xl font-heading font-black text-[#1E3E5B]">
-              Share Your Baby&apos;s Special Moments
-            </h2>
-            <p className="text-xs text-[#6C7A89]">
-              Tag us on Instagram <strong className="text-[#FF758F]">#MiniBunnyBaby</strong> to be featured in our community gallery!
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {socialImages.map((img, idx) => (
-              <div
-                key={idx}
-                className="group relative aspect-square rounded-3xl overflow-hidden border border-[#EDE8DF] bg-[#FAF9F5]"
-              >
-                <Image
-                  src={img.url}
-                  alt={`Mini Bunny Community Moment ${idx + 1}`}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <InstagramIcon className="w-3.5 h-3.5" />
-                    <span>{img.handle}</span>
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <CommunityPhotoWall />
         </div>
       </section>
 

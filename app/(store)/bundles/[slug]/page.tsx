@@ -1,11 +1,18 @@
 import prisma from "@/lib/prisma"
-import { serialize } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import BundleDetail from "./BundleDetail"
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const bundle = await prisma.bundle.findUnique({ where: { slug: params.slug } })
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  if (!slug) return {}
+  const bundle = await prisma.bundle.findFirst({
+    where: { slug, isActive: true },
+  })
   if (!bundle) return {}
   return {
     title: `${bundle.name} — Mini Bunny`,
@@ -13,9 +20,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default async function BundleDetailPage({ params }: { params: { slug: string } }) {
-  const bundle = await prisma.bundle.findUnique({
-    where: { slug: params.slug, isActive: true },
+export default async function BundleDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  if (!slug) notFound()
+
+  const bundle = await prisma.bundle.findFirst({
+    where: { slug, isActive: true },
     include: {
       items: {
         orderBy: { sortOrder: "asc" },

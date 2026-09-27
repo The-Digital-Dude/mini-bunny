@@ -97,7 +97,23 @@ export default function OrderDetailsClient({
           <h1 className="text-3xl font-bold tracking-tight">Order {order.orderNumber}</h1>
           <p className="text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleString()}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {order.customerPhone && (
+            <button
+              onClick={() => {
+                const phone = order.customerPhone.replace(/[^0-9]/g, "")
+                const formattedPhone = phone.startsWith("88") ? phone : `88${phone}`
+                const itemsSummary = (order.items || []).map((i: any) => `${i.productName} (${i.size || ""}) x${i.quantity}`).join(", ")
+                const msg = `Assalamu Alaikum ${order.customerName || "Customer"}! 🐰\nThank you for choosing Mini Bunny.\n\nWe received your Order #${order.orderNumber} (Total: ৳${Number(order.total).toLocaleString()}).\nItems: ${itemsSummary}\nDelivery Address: ${order.shippingAddress || ""}\n\nPlease reply *YES* to confirm your order so we can pack and dispatch your baby essentials immediately!`
+                window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer")
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Verify COD via WhatsApp</span>
+            </button>
+          )}
+
           <a href={`/order/${order.id}/invoice`} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" className="gap-2">
               <Printer className="h-4 w-4" /> Invoice

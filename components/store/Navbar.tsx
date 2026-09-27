@@ -155,52 +155,58 @@ export default function Navbar({
 
               {/* Mega Dropdown Panel */}
               {catDropdownOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 w-[620px] max-w-[90vw] animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="bg-white border border-[#EDE8DF] rounded-3xl shadow-xl p-6 overflow-hidden">
+                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 w-[820px] max-w-[95vw] animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="bg-white border border-[#EDE8DF] rounded-3xl shadow-2xl p-6 overflow-hidden max-h-[85vh] overflow-y-auto">
                     <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#EDE8DF]">
                       <span className="text-xs font-bold text-[#4A8DB7] uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" /> Baby & Kids Categories
+                        <Sparkles className="w-3.5 h-3.5" /> All 9 Mini Bunny Departments
                       </span>
                       <Link
                         href="/shop"
-                        className="text-xs font-semibold text-[#6C7A89] hover:text-[#4A8DB7] transition-colors"
+                        className="text-xs font-bold text-[#6C7A89] hover:text-[#4A8DB7] transition-colors"
                       >
                         View All Products →
                       </Link>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       {categories.map((cat) => (
                         <div
                           key={cat.id}
-                          className="p-3.5 rounded-2xl bg-[#FAF9F5] hover:bg-[#F0F7FB] border border-[#EDE8DF] transition-colors group"
+                          className="p-3 rounded-2xl bg-[#FAF9F5] hover:bg-[#F0F7FB] border border-[#EDE8DF] transition-colors group flex flex-col justify-between"
                         >
-                          <Link
-                            href={`/shop?category=${cat.slug}`}
-                            className="font-bold text-sm text-[#1E3E5B] group-hover:text-[#4A8DB7] flex items-center justify-between"
-                          >
-                            <span>{cat.name}</span>
-                            <span className="text-xs text-[#6C7A89] group-hover:translate-x-0.5 transition-transform">→</span>
-                          </Link>
+                          <div>
+                            <Link
+                              href={`/shop?category=${cat.slug}`}
+                              className="font-bold text-xs sm:text-sm text-[#1E3E5B] group-hover:text-[#4A8DB7] flex items-center justify-between"
+                            >
+                              <span className="truncate">{cat.name}</span>
+                              <span className="text-xs text-[#6C7A89] group-hover:translate-x-0.5 transition-transform">→</span>
+                            </Link>
 
-                          {/* Subcategories (if any) */}
-                          {cat.children && cat.children.length > 0 ? (
-                            <div className="mt-2.5 pt-2 border-t border-[#EDE8DF]/70 flex flex-wrap gap-1.5">
-                              {cat.children.map((sub) => (
-                                <Link
-                                  key={sub.id}
-                                  href={`/shop?category=${sub.slug}`}
-                                  className="text-[11px] font-medium bg-white hover:bg-[#4A8DB7] hover:text-white text-[#6C7A89] px-2.5 py-1 rounded-lg border border-[#EDE8DF] transition-colors"
-                                >
-                                  {sub.name}
-                                </Link>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-[#6C7A89] mt-1 line-clamp-1">
-                              Ultra-soft organic cotton & breathable fabrics
-                            </p>
-                          )}
+                            {/* Subcategories */}
+                            {cat.children && cat.children.length > 0 && (
+                              <div className="mt-2 pt-1.5 border-t border-[#EDE8DF]/70 flex flex-wrap gap-1">
+                                {cat.children.slice(0, 3).map((sub) => (
+                                  <Link
+                                    key={sub.id}
+                                    href={`/shop?category=${sub.slug}`}
+                                    className="text-[10px] font-medium bg-white hover:bg-[#4A8DB7] hover:text-white text-[#6C7A89] px-2 py-0.5 rounded-md border border-[#EDE8DF] transition-colors"
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                ))}
+                                {cat.children.length > 3 && (
+                                  <Link
+                                    href={`/shop?category=${cat.slug}`}
+                                    className="text-[9px] font-bold text-[#4A8DB7] hover:underline px-1 py-0.5"
+                                  >
+                                    +{cat.children.length - 3} more
+                                  </Link>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

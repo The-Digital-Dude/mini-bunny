@@ -291,6 +291,7 @@ model Order {
   giftMessage     String?
   giftWrap        Boolean       @default(false)
   giftWrapCharge  Decimal       @default(0)
+  giftCardDiscount Decimal      @default(0)
   deliveryDate    DateTime?
   depositAmount   Decimal       @default(0)
   customFields    String?         // answers to admin-defined CheckoutFields
@@ -321,6 +322,7 @@ model Order {
   returnRequests ReturnRequest[]
   affiliateConversions AffiliateConversion[]
   messages    OrderMessage[]
+  giftCardTransactions GiftCardTransaction[]
 
   @@map("orders")
 }
@@ -1099,19 +1101,26 @@ model DeliverySchedule {
 // ─────────────────────────────────────────────
 
 model GiftCard {
-  id            String    @id @default(cuid())
-  code          String    @unique
-  amount        Decimal
-  balance       Decimal
-  senderName    String?
-  senderEmail   String?
+  id             String    @id @default(cuid())
+  code           String    @unique
+  theme          String    @default("classic-gold") // classic-gold, baby-pink, celestial-blue, organic-sage, birthday-confetti
+  amount         Decimal
+  balance        Decimal
+  senderName     String?
+  senderEmail    String?
+  recipientName  String    @default("Valued Customer")
   recipientEmail String
-  message       String?
-  isActive      Boolean   @default(true)
-  expiresAt     DateTime?
-  redeemedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  message        String?
+  isActive       Boolean   @default(true)
+  paymentMethod  String?   // BKASH | NAGAD | CARD
+  paymentTrxId   String?   // MFS Transaction ID
+  paymentStatus  String    @default("PAID") // PAID | PENDING_VERIFICATION
+  claimedByUserId String?  // User ID who claimed the gift card into their wallet
+  claimedAt      DateTime?
+  expiresAt      DateTime?
+  redeemedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   transactions GiftCardTransaction[]
 
@@ -1127,7 +1136,10 @@ model GiftCardTransaction {
   createdAt  DateTime @default(now())
 
   giftCard GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
+  @@index([giftCardId])
+  @@index([orderId])
   @@map("gift_card_transactions")
 }
 

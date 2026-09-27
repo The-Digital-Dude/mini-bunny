@@ -16,32 +16,24 @@ export async function POST(req: Request) {
 
     const giftCard = await prisma.giftCard.findUnique({
       where: { code: cleanCode },
+      include: {
+        transactions: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
     })
 
     if (!giftCard) {
       return NextResponse.json(
-        { error: "Invalid gift card code. Please check and try again." },
+        { error: "Gift card not found. Please verify the code and try again." },
         { status: 404 }
-      )
-    }
-
-    if (giftCard.paymentStatus === "PENDING_VERIFICATION") {
-      return NextResponse.json(
-        { error: "This gift card is currently awaiting admin payment verification before activation." },
-        { status: 400 }
-      )
-    }
-
-    if (giftCard.paymentStatus === "REJECTED") {
-      return NextResponse.json(
-        { error: "This gift card purchase was rejected or canceled." },
-        { status: 400 }
       )
     }
 
     if (!giftCard.isActive) {
       return NextResponse.json(
-        { error: "This gift card is inactive or has already been fully redeemed." },
+        { error: "This gift card has been disabled or voided." },
         { status: 400 }
       )
     }
@@ -49,15 +41,7 @@ export async function POST(req: Request) {
     const now = new Date()
     if (giftCard.expiresAt && new Date(giftCard.expiresAt) < now) {
       return NextResponse.json(
-        { error: `This gift card expired on ${new Date(giftCard.expiresAt).toLocaleDateString()}.` },
-        { status: 400 }
-      )
-    }
-
-    const balance = Number(giftCard.balance)
-    if (balance <= 0) {
-      return NextResponse.json(
-        { error: "This gift card has a ৳0 remaining balance." },
+        { error: `This gift card expired on ${new Date(giftCard.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.` },
         { status: 400 }
       )
     }
@@ -65,15 +49,24 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       code: giftCard.code,
-      balance,
       initialAmount: Number(giftCard.amount),
+      currentBalance: Number(giftCard.balance),
+      theme: giftCard.theme,
       recipientName: giftCard.recipientName,
       senderName: giftCard.senderName,
+      expiresAt: giftCard.expiresAt,
+      isExpired: false,
+      transactions: giftCard.transactions.map((t) => ({
+        id: t.id,
+        amount: Number(t.amount),
+        type: t.type,
+        createdAt: t.createdAt,
+      })),
     })
   } catch (error: any) {
-    console.error("Gift card validate error:", error)
+    console.error("Gift card balance check error:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to validate gift card" },
+      { error: error.message || "Failed to check gift card balance" },
       { status: 500 }
     )
   }

@@ -45,7 +45,7 @@ export default async function BundlesPage() {
       description: "Stress-free mealtime starter set: Food-grade silicone catch-all bib, non-slip bamboo suction bowl with soft silicone spoon, training sippy cup, and set of 3 organic muslin burp cloths.",
       price: 1850,
       comparePrice: 2400,
-      image: "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?q=80&w=800&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=800&auto=format&fit=crop",
       badge: "Stage 2 Weaning",
       badgeColor: "bg-[#EBF5FB] text-[#4A8DB7]",
       includes: ["Silicone Catch Bib", "Bamboo Suction Bowl & Spoon", "Training Sippy Cup", "3x Muslin Burp Cloths"],

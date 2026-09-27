@@ -33,6 +33,30 @@ export default function AccountPage() {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState("")
+  const [giftCodeToClaim, setGiftCodeToClaim] = useState("")
+  const [isClaimingGift, setIsClaimingGift] = useState(false)
+
+  async function handleClaimGiftCardInAccount(e: React.FormEvent) {
+    e.preventDefault()
+    if (!giftCodeToClaim.trim()) return
+    setIsClaimingGift(true)
+    try {
+      const res = await fetch("/api/store/gift-card/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: giftCodeToClaim.trim().toUpperCase() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to claim gift card")
+      toast.success(`🎉 ৳${data.claimedAmount.toLocaleString()} added to your wallet!`)
+      setStoreCreditBalance(data.newWalletBalance)
+      setGiftCodeToClaim("")
+    } catch (err: any) {
+      toast.error(err.message || "Could not claim gift card")
+    } finally {
+      setIsClaimingGift(false)
+    }
+  }
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -356,17 +380,61 @@ export default function AccountPage() {
             <AddressList />
           )}
 
-          {/* TAB: STORE CREDIT */}
+          {/* TAB: STORE CREDIT & GIFT WALLET */}
           {activeTab === "credit" && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-heading font-black text-[#1E3E5B]">Store Credit</h2>
-              <div className="bg-[#1E3E5B] text-white rounded-3xl p-8 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-heading font-black text-[#1E3E5B]">Parent Gift Wallet</h2>
+                  <p className="text-xs text-[#6C7A89] mt-0.5">Use your store balance for seamless 1-click checkout on any order.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/gift-cards")}
+                  className="px-4 py-2 bg-[#FAF9F5] border border-[#EDE8DF] hover:border-[#1E3E5B] text-xs font-bold text-[#1E3E5B] rounded-2xl transition-colors flex items-center gap-1.5"
+                >
+                  <Gift className="w-3.5 h-3.5 text-[#FF758F]" />
+                  <span>Send a Gift Card</span>
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-br from-[#1E3E5B] to-[#2B567E] text-white rounded-3xl p-8 relative overflow-hidden shadow-md">
                 <div className="absolute right-0 top-0 w-64 h-64 bg-[#2ECC71]/15 rounded-full blur-3xl" />
                 <div className="relative z-10">
                   <p className="text-white/70 uppercase tracking-wider text-xs font-bold mb-2">Available Balance</p>
-                  <h3 className="text-5xl font-mono font-bold text-[#2ECC71] mb-2">৳{storeCreditBalance.toLocaleString()}</h3>
-                  <p className="text-xs text-white/80">Automatically eligible at checkout on your next order.</p>
+                  <h3 className="text-4xl sm:text-5xl font-mono font-bold text-[#2ECC71] mb-2">৳{storeCreditBalance.toLocaleString()}</h3>
+                  <p className="text-xs text-white/80">Automatically applied at checkout on your baby essentials.</p>
                 </div>
+              </div>
+
+              {/* Quick Claim Gift Card Box */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EDE8DF] shadow-xs space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FFF0F3] text-[#FF758F] flex items-center justify-center">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-black text-base text-[#1E3E5B]">Have a Mini Bunny Gift Card?</h3>
+                    <p className="text-xs text-[#6C7A89]">Enter your 16-character code to deposit the funds into this wallet.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleClaimGiftCardInAccount} className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <input
+                    type="text"
+                    placeholder="BUNNY-XXXX-XXXX-XXXX"
+                    value={giftCodeToClaim}
+                    onChange={(e) => setGiftCodeToClaim(e.target.value.toUpperCase())}
+                    className="flex-1 bg-[#FAF9F5] border border-[#EDE8DF] focus:bg-white focus:border-[#1E3E5B] rounded-2xl px-4 py-3 text-xs font-mono font-bold tracking-wider outline-none uppercase placeholder:tracking-normal placeholder:font-sans"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isClaimingGift || !giftCodeToClaim.trim()}
+                    className="px-6 py-3 bg-[#1E3E5B] text-white font-bold rounded-2xl hover:bg-[#152e44] transition-colors text-xs disabled:opacity-50 shrink-0 flex items-center justify-center gap-2"
+                  >
+                    {isClaimingGift ? "Claiming..." : "Claim to Wallet"}
+                  </button>
+                </form>
               </div>
             </div>
           )}

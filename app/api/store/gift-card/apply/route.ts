@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma"
 
 export async function POST(req: Request) {
   try {
-    const { code } = await req.json()
+    const { code, totalAmount } = await req.json()
 
     if (!code || typeof code !== "string" || code.trim().length === 0) {
       return NextResponse.json(
@@ -25,23 +25,9 @@ export async function POST(req: Request) {
       )
     }
 
-    if (giftCard.paymentStatus === "PENDING_VERIFICATION") {
-      return NextResponse.json(
-        { error: "This gift card is currently awaiting admin payment verification before activation." },
-        { status: 400 }
-      )
-    }
-
-    if (giftCard.paymentStatus === "REJECTED") {
-      return NextResponse.json(
-        { error: "This gift card purchase was rejected or canceled." },
-        { status: 400 }
-      )
-    }
-
     if (!giftCard.isActive) {
       return NextResponse.json(
-        { error: "This gift card is inactive or has already been fully redeemed." },
+        { error: "This gift card is inactive or has been disabled." },
         { status: 400 }
       )
     }
@@ -54,24 +40,30 @@ export async function POST(req: Request) {
       )
     }
 
-    const balance = Number(giftCard.balance)
-    if (balance <= 0) {
+    const availableBalance = Number(giftCard.balance)
+    if (availableBalance <= 0) {
       return NextResponse.json(
         { error: "This gift card has a ৳0 remaining balance." },
         { status: 400 }
       )
     }
 
+    const payable = typeof totalAmount === "number" && totalAmount > 0 ? totalAmount : availableBalance
+    const appliedAmount = Math.min(availableBalance, payable)
+    const remainingBalanceAfter = availableBalance - appliedAmount
+
     return NextResponse.json({
       success: true,
       code: giftCard.code,
-      balance,
-      initialAmount: Number(giftCard.amount),
+      availableBalance,
+      appliedAmount,
+      remainingBalanceAfter,
       recipientName: giftCard.recipientName,
       senderName: giftCard.senderName,
+      message: `৳${appliedAmount.toLocaleString()} applied from Gift Card (${giftCard.code})`,
     })
   } catch (error: any) {
-    console.error("Gift card validate error:", error)
+    console.error("Gift card apply error:", error)
     return NextResponse.json(
       { error: error.message || "Failed to validate gift card" },
       { status: 500 }
