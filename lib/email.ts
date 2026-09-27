@@ -324,7 +324,7 @@ export async function sendAbandonedCartEmail(data: {
     </div>`).join("")
 
   const noteHtml = data.note
-    ? `<p style="margin-top:16px;padding:12px 16px;background:#fef9ec;border-left:3px solid #c9a84c;border-radius:4px;font-size:14px;color:#92670a">${data.note}</p>`
+    ? `<p style="margin-top:16px;padding:12px 16px;background:#F0F7FB;border-left:3px solid #4A8DB7;border-radius:6px;font-size:14px;color:#1E3E5B">${data.note}</p>`
     : ""
 
   const content = `
