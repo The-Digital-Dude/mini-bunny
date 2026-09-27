@@ -16,6 +16,7 @@ import ProductQA from "@/components/store/ProductQA"
 import SizeQuiz from "@/components/store/SizeQuiz"
 import StickyAddToCart from "@/components/store/StickyAddToCart"
 import CompleteTheSet from "@/components/store/CompleteTheSet"
+import SmartDeliveryEstimator from "@/components/store/SmartDeliveryEstimator"
 import TrackPageView from "@/components/store/TrackPageView"
 import ViewContentTracker from "@/components/store/ViewContentTracker"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -329,6 +330,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 primaryColors={Array.from(new Set(product.variants.map((v: any) => v.color).filter(Boolean)))}
               />
             )}
+
+            {/* Smart Delivery Countdown & Free Shipping Estimator */}
+            <div className="mt-6">
+              <SmartDeliveryEstimator
+                subtotal={displayPrice}
+                freeShippingThreshold={freeShippingThreshold || 2000}
+              />
+            </div>
 
             {/* Product Add-ons */}
             {product.addons.length > 0 && (

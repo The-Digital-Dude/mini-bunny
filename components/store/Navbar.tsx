@@ -8,6 +8,7 @@ import { useWishlistStore } from "@/store/useWishlistStore"
 import CartDrawer from "@/components/store/CartDrawer"
 import SearchModal from "@/components/store/SearchModal"
 import BunnyLogo from "@/components/store/BunnyLogo"
+import ChildSwitcher from "@/components/store/ChildSwitcher"
 
 type NavCategory = {
   id: string
@@ -282,8 +283,11 @@ export default function Navbar({
             </Link>
           </nav>
 
-          {/* User & Cart Icons */}
-          <div className="flex items-center justify-end gap-2 sm:gap-4 shrink-0">
+          {/* User, Child Switcher & Cart Icons */}
+          <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
+            {/* Child / Baby Profile Quick Switcher */}
+            <ChildSwitcher className="hidden sm:inline-flex" />
+
             <button
               onClick={() => setSearchOpen(true)}
               className="p-2.5 text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors"
@@ -337,6 +341,11 @@ export default function Navbar({
               >
                 <X className="w-6 h-6" />
               </button>
+            </div>
+
+            {/* Mobile Child Switcher */}
+            <div className="pt-1">
+              <ChildSwitcher className="w-full justify-between" />
             </div>
 
             <nav className="flex flex-col gap-4 text-sm font-semibold">

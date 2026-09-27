@@ -319,7 +319,7 @@ export default async function StoreHomepage() {
             </p>
           </div>
 
-          <HomeAgeFilter allProducts={serializedProducts} />
+          <HomeAgeFilter allProducts={serializedProducts as any} />
         </div>
       </section>
 
