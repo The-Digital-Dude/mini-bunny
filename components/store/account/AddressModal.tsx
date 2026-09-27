@@ -1,0 +1,236 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { X, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { DIVISIONS, getDistricts, getAreaSuggestions } from "@/lib/bangladeshAddress"
+
+interface AddressModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSaved: () => void
+  addressToEdit?: any | null
+}
+
+export default function AddressModal({ isOpen, onClose, onSaved, addressToEdit }: AddressModalProps) {
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    label: "Home",
+    fullName: "",
+    phone: "",
+    division: "",
+    district: "",
+    area: "",
+    address: "",
+    isDefault: false,
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (isOpen) {
+      if (addressToEdit) {
+        setFormData({
+          label: addressToEdit.label || "Home",
+          fullName: addressToEdit.fullName || "",
+          phone: addressToEdit.phone || "",
+          division: addressToEdit.division || "",
+          district: addressToEdit.district || "",
+          area: addressToEdit.area || "",
+          address: addressToEdit.address || "",
+          isDefault: addressToEdit.isDefault || false,
+        })
+      } else {
+        setFormData({
+          label: "Home",
+          fullName: "",
+          phone: "",
+          division: "",
+          district: "",
+          area: "",
+          address: "",
+          isDefault: false,
+        })
+      }
+    }
+  }, [isOpen, addressToEdit])
+
+  if (!isOpen) return null
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({ ...prev, [name]: checked }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: "" }))
+      }
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const newErrors: Record<string, string> = {}
+    if (!formData.label) newErrors.label = "Label is required"
+    if (!formData.fullName) newErrors.fullName = "Full Name is required"
+    if (!formData.phone) newErrors.phone = "Phone is required"
+    if (!formData.division) newErrors.division = "Division is required"
+    if (!formData.district) newErrors.district = "District is required"
+    if (!formData.area) newErrors.area = "Area is required"
+    if (!formData.address) newErrors.address = "Street Address is required"
+    setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    setLoading(true)
+    
+    try {
+      const url = addressToEdit ? `/api/user/addresses/${addressToEdit.id}` : "/api/user/addresses"
+      const method = addressToEdit ? "PATCH" : "POST"
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      })
+
+      if (res.ok) {
+        toast.success(addressToEdit ? "Address updated successfully" : "Address added successfully")
+        onSaved()
+      } else {
+        const errorData = await res.json()
+        toast.error(errorData.error || "Failed to save address")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-6 border-b border-bunny-border">
+          <h2 className="text-xl font-heading font-bold text-bunny-navy">
+            {addressToEdit ? "Edit Address" : "Add New Address"}
+          </h2>
+          <button onClick={onClose} className="p-2 text-bunny-text hover:text-bunny-error transition-colors rounded-full hover:bg-bunny-muted">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[75vh]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Label (e.g. Home, Office)</label>
+              <input name="label" value={formData.label} onChange={handleChange} placeholder="Home" className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all ${errors.label ? "border-red-500" : ""}`} />
+              {errors.label && <p className="text-xs text-red-500 mt-1">{errors.label}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Full Name</label>
+              <input name="fullName" value={formData.fullName} onChange={handleChange} className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all ${errors.fullName ? "border-red-500" : ""}`} />
+              {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Phone Number</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all ${errors.phone ? "border-red-500" : ""}`} />
+              {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Division</label>
+              <select
+                name="division"
+                value={formData.division}
+                onChange={e => { setFormData(prev => ({ ...prev, division: e.target.value, district: "", area: "" })); setErrors(prev => ({ ...prev, division: "" })) }}
+                className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all ${errors.division ? "border-red-500" : ""}`}
+              >
+                <option value="">Select Division</option>
+                {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              {errors.division && <p className="text-xs text-red-500 mt-1">{errors.division}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">District / City</label>
+              <select
+                name="district"
+                value={formData.district}
+                onChange={e => { setFormData(prev => ({ ...prev, district: e.target.value, area: "" })); setErrors(prev => ({ ...prev, district: "" })) }}
+                disabled={!formData.division}
+                className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all disabled:opacity-50 ${errors.district ? "border-red-500" : ""}`}
+              >
+                <option value="">{formData.division ? "Select District" : "Select division first"}</option>
+                {getDistricts(formData.division).map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              {errors.district && <p className="text-xs text-red-500 mt-1">{errors.district}</p>}
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Area / Thana</label>
+              <input
+                list="account-area-suggestions"
+                name="area"
+                value={formData.area}
+                onChange={handleChange}
+                disabled={!formData.district}
+                placeholder={formData.district ? "e.g. Gulshan, Dhanmondi, or your upazila" : "Select district first"}
+                className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all disabled:opacity-50 ${errors.area ? "border-red-500" : ""}`}
+              />
+              <datalist id="account-area-suggestions">
+                {getAreaSuggestions(formData.district).map(a => <option key={a} value={a} />)}
+              </datalist>
+              {errors.area && <p className="text-xs text-red-500 mt-1">{errors.area}</p>}
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Street Address</label>
+              <textarea name="address" value={formData.address} onChange={handleChange} rows={3} className={`w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all resize-none ${errors.address ? "border-red-500" : ""}`} />
+              {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+            </div>
+
+            <div className="md:col-span-2 flex items-center gap-3 py-2">
+              <input 
+                type="checkbox" 
+                id="isDefault" 
+                name="isDefault"
+                checked={formData.isDefault}
+                onChange={handleChange}
+                className="w-4 h-4 text-bunny-navy focus:ring-bunny-blue rounded border-bunny-border"
+              />
+              <label htmlFor="isDefault" className="text-sm font-medium text-bunny-navy cursor-pointer">
+                Set as default address
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-8 flex gap-4">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="flex-1 py-3 bg-bunny-muted text-bunny-navy font-bold uppercase tracking-widest text-xs rounded-full hover:bg-bunny-border transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="flex-1 py-3 bg-bunny-navy text-white font-bold uppercase tracking-widest text-xs rounded-full hover:bg-bunny-blue transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {addressToEdit ? "Update" : "Save"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

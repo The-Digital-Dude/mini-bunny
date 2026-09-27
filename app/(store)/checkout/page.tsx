@@ -1,0 +1,103 @@
+import CheckoutForm from "@/components/store/CheckoutForm"
+import TrackCheckoutStart from "@/components/store/TrackCheckoutStart"
+import { ShieldCheck } from "lucide-react"
+import prisma from "@/lib/prisma"
+import { auth } from "@/lib/auth"
+
+export default async function CheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recover?: string }>
+}) {
+  const session = await auth()
+  const userId = session?.user?.id
+  const { recover } = await searchParams
+
+  // Restore abandoned cart items if ?recover=sessionId
+  let recoveredItems: any[] = []
+  if (recover) {
+    const cart = await prisma.abandonedCart.findUnique({ where: { sessionId: recover } }).catch(() => null)
+    if (cart && !cart.isRecovered) {
+      try { recoveredItems = JSON.parse(cart.items) } catch {}
+      // Mark recovered
+      prisma.abandonedCart.update({ where: { id: cart.id }, data: { isRecovered: true, recoveredAt: new Date() } }).catch(() => {})
+    }
+  }
+
+  const [settings, checkoutFields, loyaltyData, creditData] = await Promise.all([
+    prisma.setting.findMany({
+      where: { key: { in: ["free_shipping_above", "shipping_charge", "enabled_payment_methods", "tax_enabled", "tax_rate", "tax_label", "gift_wrap_enabled", "gift_wrap_charge", "loyalty_points_per_taka", "loyalty_redemption_rate", "bkash_merchant_number", "nagad_merchant_number"] } },
+    }).catch(() => []),
+    prisma.checkoutField.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }).catch(() => []),
+    userId ? prisma.loyaltyPoint.aggregate({ where: { userId }, _sum: { points: true } }).catch(() => null) : null,
+    userId ? prisma.storeCredit.findUnique({ where: { userId } }).catch(() => null) : null,
+  ])
+
+  const map = Object.fromEntries(settings.map((s) => [s.key, s.value]))
+  const freeShippingThreshold = map.free_shipping_above ? Number(map.free_shipping_above) : null
+  const shippingChargeAmount = Number(map.shipping_charge || 60)
+  let enabledMethods = map.enabled_payment_methods
+    ? map.enabled_payment_methods.split(",").map((s) => s.trim())
+    : ["COD", "BKASH", "NAGAD"]
+
+  const bkashMerchantNumber = map.bkash_merchant_number || ""
+  const nagadMerchantNumber = map.nagad_merchant_number || ""
+
+  // Allow BKASH/NAGAD if either the API gateway creds OR a manual merchant number is set
+  const hasBkashGateway = !!(process.env.BKASH_APP_KEY && !process.env.BKASH_APP_KEY.includes("your_bkash"))
+  const hasNagadGateway = !!(process.env.NAGAD_MERCHANT_ID && !process.env.NAGAD_MERCHANT_ID.includes("your_nagad"))
+  if (!hasBkashGateway && !bkashMerchantNumber) enabledMethods = enabledMethods.filter(m => m !== "BKASH")
+  if (!hasNagadGateway && !nagadMerchantNumber) enabledMethods = enabledMethods.filter(m => m !== "NAGAD")
+  if (enabledMethods.length === 0) enabledMethods = ["COD"]
+
+  const taxEnabled = map.tax_enabled === "true"
+  const taxRate = Number(map.tax_rate || 0)
+  const taxLabel = map.tax_label || "VAT"
+  const giftWrapEnabled = map.gift_wrap_enabled === "true"
+  const giftWrapCharge = Number(map.gift_wrap_charge || 50)
+
+  const loyaltyBalance = loyaltyData?._sum?.points ?? 0
+  // 100 points = ৳1 by default (configurable)
+  const loyaltyRedemptionRate = Number(map.loyalty_redemption_rate || 100)
+  const loyaltyMaxDiscount = Math.floor(loyaltyBalance / loyaltyRedemptionRate)
+
+  const storeCreditBalance = Number(creditData?.balance ?? 0)
+
+  const serialisedFields = JSON.parse(JSON.stringify(checkoutFields))
+
+  return (
+    <div className="bg-bunny-bg min-h-screen pt-8 pb-24 animate-in fade-in duration-500">
+      <TrackCheckoutStart />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div className="flex flex-col items-center justify-center mb-10 text-center">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-bunny-navy mb-2">Checkout</h1>
+          <p className="text-xs text-bunny-text-muted flex items-center gap-1 uppercase tracking-widest font-medium">
+            <ShieldCheck className="w-4 h-4 text-bunny-success" /> Secure 256-bit SSL Encryption
+          </p>
+        </div>
+
+        <CheckoutForm
+          freeShippingThreshold={freeShippingThreshold}
+          shippingChargeAmount={shippingChargeAmount}
+          enabledPaymentMethods={enabledMethods}
+          bkashMerchantNumber={bkashMerchantNumber}
+          nagadMerchantNumber={nagadMerchantNumber}
+          hasBkashGateway={hasBkashGateway}
+          hasNagadGateway={hasNagadGateway}
+          taxEnabled={taxEnabled}
+          taxRate={taxRate}
+          taxLabel={taxLabel}
+          giftWrapEnabled={giftWrapEnabled}
+          giftWrapCharge={giftWrapCharge}
+          checkoutFields={serialisedFields}
+          loyaltyBalance={loyaltyBalance}
+          loyaltyMaxDiscount={loyaltyMaxDiscount}
+          storeCreditBalance={storeCreditBalance}
+          userId={userId}
+          recoveredItems={recoveredItems}
+        />
+      </div>
+    </div>
+  )
+}

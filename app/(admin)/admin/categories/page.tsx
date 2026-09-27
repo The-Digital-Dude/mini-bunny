@@ -1,0 +1,42 @@
+import prisma from "@/lib/prisma"
+import { CategoryClient } from "./CategoryClient"
+
+export default async function CategoriesPage() {
+  const categories = await prisma.category.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: {
+      parent: { select: { id: true, name: true } },
+      children: { select: { id: true, name: true, slug: true }, orderBy: { sortOrder: "asc" } },
+      attributeConfig: true,
+      _count: { select: { products: true } }
+    },
+  })
+
+  const formatted = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    description: c.description || "",
+    image: c.image || "",
+    parentId: c.parentId,
+    parentName: c.parent?.name || null,
+    children: c.children || [],
+    isActive: c.isActive,
+    showOnNavbar: c.showOnNavbar,
+    showOnHomepage: c.showOnHomepage,
+    sortOrder: c.sortOrder,
+    productCount: c._count.products,
+  }))
+
+  return (
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
+        <p className="text-muted-foreground text-sm mt-1">
+          Add, edit, and control where each category appears — navbar, homepage, or both.
+        </p>
+      </div>
+      <CategoryClient data={formatted} />
+    </div>
+  )
+}

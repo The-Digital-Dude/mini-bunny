@@ -1,0 +1,1122 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
+import Image from "next/image"
+import { useCartStore } from "@/store/useCartStore"
+import { useRouter } from "next/navigation"
+import { MapPin, CreditCard, ClipboardCheck, ChevronRight, Check, Gift, MessageSquare, User, Star, Wallet, Tag, Calendar, ShoppingBag, ChevronDown } from "lucide-react"
+import { DIVISIONS, getDistricts, getAreaSuggestions } from "@/lib/bangladeshAddress"
+
+type CheckoutField = {
+  id: string
+  label: string
+  placeholder: string | null
+  type: string
+  options: string[]
+  isRequired: boolean
+  step: number
+  sortOrder: number
+}
+
+export default function CheckoutForm({
+  freeShippingThreshold = null,
+  shippingChargeAmount = 60,
+  enabledPaymentMethods = ["COD", "BKASH", "NAGAD"],
+  bkashMerchantNumber = "",
+  nagadMerchantNumber = "",
+  hasBkashGateway = false,
+  hasNagadGateway = false,
+  taxEnabled = false,
+  taxRate = 0,
+  taxLabel = "VAT",
+  giftWrapEnabled = false,
+  giftWrapCharge = 50,
+  checkoutFields = [],
+  loyaltyBalance = 0,
+  loyaltyMaxDiscount = 0,
+  storeCreditBalance = 0,
+  userId,
+  recoveredItems,
+}: {
+  freeShippingThreshold?: number | null
+  shippingChargeAmount?: number
+  enabledPaymentMethods?: string[]
+  bkashMerchantNumber?: string
+  nagadMerchantNumber?: string
+  hasBkashGateway?: boolean
+  hasNagadGateway?: boolean
+  taxEnabled?: boolean
+  taxRate?: number
+  taxLabel?: string
+  giftWrapEnabled?: boolean
+  giftWrapCharge?: number
+  checkoutFields?: CheckoutField[]
+  loyaltyBalance?: number
+  loyaltyMaxDiscount?: number
+  storeCreditBalance?: number
+  userId?: string
+  recoveredItems?: any[]
+}) {
+  const { items, clearCart, addItem } = useCartStore()
+  const router = useRouter()
+  const [step, setStep] = useState(1)
+
+  // Restore abandoned cart items on mount
+  useEffect(() => {
+    if (recoveredItems && recoveredItems.length > 0 && items.length === 0) {
+      recoveredItems.forEach((i) => addItem(i))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const [loading, setLoading] = useState(false)
+
+  // Step 1 — address
+  const [address, setAddress] = useState({ name: "", phone: "", division: "", district: "", area: "", fullAddress: "" })
+  const [guestEmail, setGuestEmail] = useState("")
+  const [isGuest, setIsGuest] = useState(false)
+
+  // Step 2 — payment
+  const [paymentMethod, setPaymentMethod] = useState(
+    enabledPaymentMethods.includes("COD") ? "COD" : enabledPaymentMethods[0] || "COD"
+  )
+  const [depositInfo, setDepositInfo] = useState<{ required: boolean; amount: number } | null>(null)
+  // Manual payment (bKash/Nagad without gateway)
+  const [manualTrxId, setManualTrxId] = useState("")
+  const [manualScreenshot, setManualScreenshot] = useState<File | null>(null)
+  const [manualScreenshotUrl, setManualScreenshotUrl] = useState("")
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
+
+  // Whether selected method uses the manual (no-gateway) flow
+  const isManualBkash = paymentMethod === "BKASH" && !hasBkashGateway && !!bkashMerchantNumber
+  const isManualNagad = paymentMethod === "NAGAD" && !hasNagadGateway && !!nagadMerchantNumber
+  const isManualPayment = isManualBkash || isManualNagad
+  const manualMerchantNumber = isManualBkash ? bkashMerchantNumber : nagadMerchantNumber
+
+  async function uploadScreenshot(file: File): Promise<string> {
+    const fd = new FormData()
+    fd.append("file", file)
+    const res = await fetch("/api/store/upload-payment-screenshot", { method: "POST", body: fd })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Upload failed")
+    return data.url
+  }
+
+  // Validation errors
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Step 3 — extras
+  const { isGiftWrapped: defaultGiftWrap, giftMessage: defaultGiftMessage } = useCartStore()
+  const [orderNote, setOrderNote] = useState("")
+  const [giftWrap, setGiftWrap] = useState(defaultGiftWrap)
+  const [giftMessage, setGiftMessage] = useState(defaultGiftMessage)
+
+  // Loyalty points redemption
+  const [redeemPoints, setRedeemPoints] = useState(false)
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false)
+  const [pointsToRedeem, setPointsToRedeem] = useState(0)
+
+  // Store credit redemption
+  const [redeemCredit, setRedeemCredit] = useState(false)
+  const [creditToRedeem, setCreditToRedeem] = useState(0)
+
+  // Custom checkout fields (keyed by field id)
+  const [customFields, setCustomFields] = useState<Record<string, string>>({})
+
+  // Coupon
+  const [couponCode, setCouponCode] = useState("")
+  const [appliedCoupon, setAppliedCoupon] = useState<{ couponId: string; couponCode: string; discount: number; message: string } | null>(null)
+  const [couponError, setCouponError] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
+
+  // Gift card
+  const [gcCode, setGcCode] = useState("")
+  const [appliedGC, setAppliedGC] = useState<{ code: string; balance: number } | null>(null)
+  const [gcError, setGcError] = useState("")
+  const [gcLoading, setGcLoading] = useState(false)
+
+  // Delivery date
+  const [deliveryDate, setDeliveryDate] = useState("")
+
+  const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
+
+  // The shippingChargeAmount prop is a static default computed once at page
+  // load using only the global setting — it doesn't know about district-based
+  // shipping zones. Re-resolve it whenever the customer's district changes so
+  // the displayed estimate matches what the server will actually charge.
+  const [zoneShippingCharge, setZoneShippingCharge] = useState<number | null>(null)
+  useEffect(() => {
+    if (!address.district) { setZoneShippingCharge(null); return }
+    const controller = new AbortController()
+    fetch(`/api/store/shipping-estimate?district=${encodeURIComponent(address.district)}&subtotal=${subtotal}`, { signal: controller.signal })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data && typeof data.charge === "number") setZoneShippingCharge(data.charge) })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [address.district, subtotal])
+
+  // Once the zone-aware estimate has resolved, trust it exactly as-is —
+  // resolveShippingCharge() already accounts for free-shipping thresholds
+  // (including per-zone overrides), so re-applying the global-only check
+  // on top of it could produce a different result than what the server
+  // will actually charge. Only fall back to the static global estimate
+  // before a district is selected / the estimate call hasn't resolved yet.
+  const shippingCharge = zoneShippingCharge !== null
+    ? zoneShippingCharge
+    : ((freeShippingThreshold && subtotal >= freeShippingThreshold) ? 0 : shippingChargeAmount)
+  const taxAmount = taxEnabled ? Math.round((subtotal * taxRate) / 100) : 0
+  const giftWrapAmount = giftWrap ? giftWrapCharge : 0
+  const loyaltyDiscount = redeemPoints ? Math.min(pointsToRedeem, loyaltyMaxDiscount) : 0
+  const creditDiscount = redeemCredit ? Math.min(creditToRedeem, storeCreditBalance) : 0
+  const couponDiscount = appliedCoupon?.discount ?? 0
+  const gcDiscount = appliedGC ? Math.min(appliedGC.balance, subtotal + shippingCharge + taxAmount + giftWrapAmount - loyaltyDiscount - creditDiscount - couponDiscount) : 0
+  const total = Math.max(0, subtotal + shippingCharge + taxAmount + giftWrapAmount - loyaltyDiscount - creditDiscount - couponDiscount - gcDiscount)
+
+  const handleApplyGC = async () => {
+    if (!gcCode.trim()) return
+    setGcLoading(true); setGcError("")
+    const res = await fetch("/api/store/gift-card/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: gcCode.trim().toUpperCase() }),
+    })
+    const data = await res.json()
+    setGcLoading(false)
+    if (!res.ok) { setGcError(data.error ?? "Invalid gift card"); return }
+    setAppliedGC({ code: data.code, balance: data.balance })
+    setGcCode("")
+  }
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError("")
+    try {
+      const res = await fetch("/api/store/apply-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, items }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setCouponError(data.error); setAppliedCoupon(null) }
+      else setAppliedCoupon(data)
+    } catch { setCouponError("Failed to apply coupon") }
+    finally { setCouponLoading(false) }
+  }
+
+  const minDeliveryDate = (() => {
+    const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]
+  })()
+  const maxDeliveryDate = (() => {
+    const d = new Date(); d.setDate(d.getDate() + 8); return d.toISOString().split("T")[0]
+  })()
+
+  const handleSubmitStep1 = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Validate fields
+    const newErrors: Record<string, string> = {}
+    if (isGuest && !guestEmail) newErrors.guestEmail = "Email is required"
+    if (!address.name) newErrors.name = "Full Name is required"
+    if (!address.phone) newErrors.phone = "Phone is required"
+    if (!address.division) newErrors.division = "Division is required"
+    if (!address.district) newErrors.district = "District is required"
+    if (!address.area) newErrors.area = "Area is required"
+    if (!address.fullAddress) newErrors.fullAddress = "Full Address is required"
+    
+    setErrors(newErrors)
+    
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    setStep(2)
+    try {
+      const res = await fetch("/api/store/deposit-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: address.phone, total }),
+      })
+      if (res.ok) setDepositInfo(await res.json())
+    } catch { /* non-critical */ }
+  }
+
+  const handleSubmitStep2 = (e: React.FormEvent) => {
+    e.preventDefault()
+    setStep(3)
+  }
+
+  const handlePlaceOrder = async () => {
+    // Manual payment: validate transaction ID required
+    if (isManualPayment && !manualTrxId.trim()) {
+      toast.error("Please enter your transaction ID")
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Upload screenshot if provided and not yet uploaded
+      let screenshotUrl = manualScreenshotUrl
+      if (isManualPayment && manualScreenshot && !screenshotUrl) {
+        setUploadingScreenshot(true)
+        try {
+          screenshotUrl = await uploadScreenshot(manualScreenshot)
+          setManualScreenshotUrl(screenshotUrl)
+        } finally {
+          setUploadingScreenshot(false)
+        }
+      }
+
+      const orderRes = await fetch("/api/store/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          address,
+          paymentMethod,
+          subtotal,
+          shippingCharge,
+          total,
+          note: orderNote || null,
+          giftWrap,
+          giftMessage: giftWrap ? giftMessage : null,
+          giftWrapCharge: giftWrapAmount,
+          isGuest,
+          guestEmail: isGuest ? guestEmail : null,
+          userId: userId || null,
+          loyaltyPointsRedeemed: redeemPoints ? Math.min(pointsToRedeem * 100, loyaltyBalance) : 0,
+          loyaltyDiscount,
+          storeCreditRedeemed: redeemCredit ? creditDiscount : 0,
+          customFields: Object.keys(customFields).length > 0 ? customFields : null,
+          couponId: appliedCoupon?.couponId || null,
+          couponDiscount,
+          giftCardCode: appliedGC?.code || null,
+          giftCardDiscount: gcDiscount,
+          deliveryDate: deliveryDate || null,
+          manualTrxId: isManualPayment ? manualTrxId.trim() : null,
+          manualScreenshotUrl: isManualPayment ? screenshotUrl : null,
+        }),
+      })
+      const orderData = await orderRes.json()
+      if (!orderRes.ok) throw new Error(orderData.error)
+
+      if (isManualPayment) {
+        // Manual payment — order placed, awaiting admin verification
+        clearCart()
+        router.push(`/order/${orderData.orderId}?placed=1`)
+      } else if (paymentMethod === "COD" && orderData.depositAmount > 0) {
+        const bkashRes = await fetch("/api/payments/bkash/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: orderData.orderId, type: "deposit" }),
+        })
+        const bkashData = await bkashRes.json()
+        if (!bkashRes.ok) throw new Error(bkashData.error)
+        clearCart()
+        window.location.href = bkashData.bkashURL
+      } else if (paymentMethod === "BKASH") {
+        const bkashRes = await fetch("/api/payments/bkash/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: orderData.orderId }),
+        })
+        const bkashData = await bkashRes.json()
+        if (!bkashRes.ok) throw new Error(bkashData.error)
+        clearCart()
+        window.location.href = bkashData.bkashURL
+      } else if (paymentMethod === "NAGAD") {
+        const nagadRes = await fetch("/api/payments/nagad/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: orderData.orderId }),
+        })
+        const nagadData = await nagadRes.json()
+        if (!nagadRes.ok) throw new Error(nagadData.error)
+        clearCart()
+        window.location.href = nagadData.nagadURL
+      } else {
+        clearCart()
+        router.push(`/order/${orderData.orderId}?placed=1`)
+      }
+    } catch (error: any) {
+      toast.error("Failed to place order: " + error.message)
+      setLoading(false)
+    }
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-20 bg-white border border-bunny-border rounded-2xl">
+        <h2 className="text-2xl font-heading font-bold mb-4">Your cart is empty</h2>
+        <button onClick={() => router.push("/shop")} className="px-8 py-3 bg-bunny-navy text-white font-medium hover:bg-bunny-blue transition-colors rounded-full">
+          Continue Shopping
+        </button>
+      </div>
+    )
+  }
+
+  const inputCls = "w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-base md:text-sm outline-none transition-all"
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-10 items-start">
+      <div className="w-full lg:w-2/3 space-y-6">
+
+        {/* Mobile Order Summary Toggle */}
+        <div className="lg:hidden bg-white border border-bunny-border rounded-2xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setMobileSummaryOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-5 py-4 text-sm font-bold"
+          >
+            <span className="flex items-center gap-2 text-bunny-text-muted">
+              <ShoppingBag className="w-4 h-4" />
+              {mobileSummaryOpen ? "Hide" : "Show"} order summary ({items.length} item{items.length !== 1 ? "s" : ""})
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="font-mono font-bold text-bunny-navy">৳{total.toLocaleString()}</span>
+              <ChevronDown className={`w-4 h-4 text-bunny-text-muted transition-transform ${mobileSummaryOpen ? "rotate-180" : ""}`} />
+            </span>
+          </button>
+          {mobileSummaryOpen && (
+            <div className="border-t border-bunny-border px-5 py-4 space-y-3">
+              {items.map((item) => (
+                <div key={item.variantId} className="flex gap-3 text-sm">
+                  <div className="relative w-12 h-14 shrink-0 bg-bunny-muted rounded overflow-hidden">
+                    <Image src={item.image || "/placeholder.jpg"} alt={item.name} fill sizes="48px" className="object-cover" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className="font-medium line-clamp-1">{item.name}</p>
+                    <p className="text-xs text-bunny-text-muted">{item.size} / {item.color} · Qty {item.quantity}</p>
+                  </div>
+                  <span className="font-mono font-bold shrink-0">৳{(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+              ))}
+              <div className="border-t border-bunny-border pt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between text-bunny-text-muted"><span>Subtotal</span><span className="font-mono">৳{subtotal.toLocaleString()}</span></div>
+                <div className="flex justify-between text-bunny-text-muted"><span>Shipping</span><span className="font-mono">{shippingCharge === 0 ? "Free" : `৳${shippingCharge}`}</span></div>
+                {couponDiscount > 0 && <div className="flex justify-between text-bunny-success"><span>Coupon</span><span className="font-mono">−৳{couponDiscount.toLocaleString()}</span></div>}
+                <div className="flex justify-between font-bold"><span>Total</span><span className="font-mono">৳{total.toLocaleString()}</span></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Step Indicator */}
+        <div className="flex items-center justify-between mb-8 px-2 md:px-10 relative">
+          <div className="absolute top-4 left-0 w-full h-[1px] bg-bunny-border -z-10" />
+          {["Shipping", "Payment", "Extras & Review"].map((label, i) => (
+            <div key={label} className="flex flex-col items-center gap-2 bg-bunny-bg px-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${step >= i + 1 ? "border-bunny-navy bg-bunny-navy text-white" : "border-bunny-border bg-white text-bunny-text-muted"}`}>
+                {step > i + 1 ? <Check className="w-4 h-4" /> : i + 1}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest text-center ${step >= i + 1 ? "text-bunny-navy" : "text-bunny-text-muted"}`}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Step 1: Address */}
+        <div className={`bg-white border transition-all duration-300 rounded-2xl overflow-hidden ${step === 1 ? "border-bunny-navy shadow-lg shadow-black/5" : "border-bunny-border opacity-70"}`}>
+          <div className="bg-bunny-muted/30 px-6 py-4 flex items-center justify-between border-b border-bunny-border">
+            <div className="flex items-center gap-3">
+              <MapPin className={`w-5 h-5 ${step === 1 ? "text-bunny-navy" : "text-bunny-text-muted"}`} />
+              <h2 className="font-heading font-bold text-lg">Delivery Address</h2>
+            </div>
+            {step > 1 && <button onClick={() => setStep(1)} className="text-xs font-bold uppercase tracking-widest text-bunny-blue hover:text-bunny-navy transition-colors">Edit</button>}
+          </div>
+
+          {step === 1 && (
+            <div className="p-6">
+              {/* Guest vs account toggle */}
+              <div className="flex gap-3 mb-6">
+                <button type="button" onClick={() => setIsGuest(false)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg border transition-all ${!isGuest ? "bg-bunny-navy text-white border-bunny-navy" : "border-bunny-border text-bunny-text-muted hover:border-bunny-navy"}`}>
+                  <User className="w-3.5 h-3.5 inline mr-1.5" />Login / Register
+                </button>
+                <button type="button" onClick={() => setIsGuest(true)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg border transition-all ${isGuest ? "bg-bunny-navy text-white border-bunny-navy" : "border-bunny-border text-bunny-text-muted hover:border-bunny-navy"}`}>
+                  Continue as Guest
+                </button>
+              </div>
+
+              {!isGuest && (
+                <p className="text-xs text-bunny-text-muted mb-4 p-3 bg-bunny-muted rounded-lg">
+                  <a href="/login?redirect=/checkout" className="text-bunny-blue font-bold hover:underline">Log in</a> to use saved addresses & earn loyalty points. Or fill in below to continue as guest.
+                </p>
+              )}
+
+              <form onSubmit={handleSubmitStep1} className="space-y-4">
+                {isGuest && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Email (for order updates)</label>
+                    <input type="email" value={guestEmail} onChange={e => { setGuestEmail(e.target.value); setErrors(prev => ({...prev, guestEmail: ""})) }} className={`${inputCls} ${errors.guestEmail ? "border-red-500" : ""}`} placeholder="you@example.com" />
+                    {errors.guestEmail && <p className="text-xs text-red-500">{errors.guestEmail}</p>}
+                  </div>
+                )}
+                {/* Quick Zone Selector for Bangladesh */}
+                <div className="space-y-1.5 pb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">
+                    Delivery Area (Quick Pick)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddress({
+                          ...address,
+                          division: "Dhaka",
+                          district: "Dhaka",
+                          area: address.area || "",
+                        })
+                        setErrors(prev => ({ ...prev, division: "", district: "" }))
+                      }}
+                      className={`p-3 rounded-2xl border text-left text-xs transition-all ${
+                        address.district === "Dhaka"
+                          ? "border-[#4A8DB7] bg-[#EBF5FB] text-[#1E3E5B] font-bold shadow-sm"
+                          : "border-[#EDE8DF] bg-[#FAF9F5] text-[#6C7A89] hover:border-[#4A8DB7]"
+                      }`}
+                    >
+                      <span className="block font-bold">🏢 Inside Dhaka</span>
+                      <span className="text-[10px] text-[#6C7A89]">৳60–70 · 2–3 Days</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (address.district === "Dhaka") {
+                          setAddress({ ...address, division: "", district: "", area: "" })
+                        }
+                      }}
+                      className={`p-3 rounded-2xl border text-left text-xs transition-all ${
+                        address.district && address.district !== "Dhaka"
+                          ? "border-[#4A8DB7] bg-[#EBF5FB] text-[#1E3E5B] font-bold shadow-sm"
+                          : "border-[#EDE8DF] bg-[#FAF9F5] text-[#6C7A89] hover:border-[#4A8DB7]"
+                      }`}
+                    >
+                      <span className="block font-bold">🏡 Outside Dhaka</span>
+                      <span className="text-[10px] text-[#6C7A89]">৳120–130 · 3–5 Days</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Phone First */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B] flex items-center justify-between">
+                      <span>Mobile Number (11 Digits) *</span>
+                      <span className="text-[10px] font-mono text-[#6C7A89]">e.g. 01712345678</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3.5 text-xs font-bold text-[#6C7A89] border-r border-[#EDE8DF] pr-2.5">
+                        🇧🇩 +880
+                      </span>
+                      <input
+                        type="tel"
+                        maxLength={11}
+                        placeholder="01XXXXXXXXX"
+                        value={address.phone}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, "")
+                          setAddress({ ...address, phone: val })
+                          setErrors(prev => ({ ...prev, phone: "" }))
+                        }}
+                        className={`${inputCls} pl-24 ${errors.phone ? "border-red-500" : ""}`}
+                      />
+                    </div>
+                    {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+                  </div>
+
+                  {/* Full Name */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">Recipient Full Name *</label>
+                    <input
+                      placeholder="e.g. Tanzina Rahman"
+                      value={address.name}
+                      onChange={e => { setAddress({ ...address, name: e.target.value }); setErrors(prev => ({...prev, name: ""})) }}
+                      className={`${inputCls} ${errors.name ? "border-red-500" : ""}`}
+                    />
+                    {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                  </div>
+
+                  {/* Division */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">Division *</label>
+                    <select
+                      value={address.division}
+                      onChange={e => { setAddress({ ...address, division: e.target.value, district: "", area: "" }); setErrors(prev => ({...prev, division: ""})) }}
+                      className={`${inputCls} ${errors.division ? "border-red-500" : ""}`}
+                    >
+                      <option value="">Select Division</option>
+                      {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    {errors.division && <p className="text-xs text-red-500">{errors.division}</p>}
+                  </div>
+
+                  {/* District */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">District *</label>
+                    <select
+                      value={address.district}
+                      onChange={e => { setAddress({ ...address, district: e.target.value, area: "" }); setErrors(prev => ({...prev, district: ""})) }}
+                      disabled={!address.division}
+                      className={`${inputCls} ${errors.district ? "border-red-500" : ""} disabled:opacity-50`}
+                    >
+                      <option value="">{address.division ? "Select District" : "Select division first"}</option>
+                      {getDistricts(address.division).map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    {errors.district && <p className="text-xs text-red-500">{errors.district}</p>}
+                  </div>
+
+                  {/* Area / Thana */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">Thana / Upazila / Police Station *</label>
+                    <input
+                      list="area-suggestions"
+                      value={address.area}
+                      onChange={e => { setAddress({ ...address, area: e.target.value }); setErrors(prev => ({...prev, area: ""})) }}
+                      disabled={!address.district}
+                      placeholder={address.district ? "e.g. Dhanmondi, Gulshan, Uttara, Mirpur or your Upazila" : "Select district first"}
+                      className={`${inputCls} ${errors.area ? "border-red-500" : ""} disabled:opacity-50`}
+                    />
+                    <datalist id="area-suggestions">
+                      {getAreaSuggestions(address.district).map(a => <option key={a} value={a} />)}
+                    </datalist>
+                    {errors.area && <p className="text-xs text-red-500">{errors.area}</p>}
+                  </div>
+
+                  {/* Full Street Address */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B]">House / Flat / Road / Landmark *</label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. House 14, Road 7, Block C, Apartment 4B (Near XYZ Mosque)"
+                      value={address.fullAddress}
+                      onChange={e => { setAddress({ ...address, fullAddress: e.target.value }); setErrors(prev => ({...prev, fullAddress: ""})) }}
+                      className={`${inputCls} resize-none ${errors.fullAddress ? "border-red-500" : ""}`}
+                    />
+                    {errors.fullAddress && <p className="text-xs text-red-500">{errors.fullAddress}</p>}
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button type="submit" className="w-full md:w-auto md:float-right px-8 py-4 bg-[#4A8DB7] hover:bg-[#367299] text-white font-bold tracking-wider flex items-center justify-center gap-2 transition-colors rounded-2xl text-xs shadow-sm">
+                    Continue to Payment <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {step > 1 && (
+            <div className="p-6 text-sm text-bunny-text-muted">
+              <p className="font-medium text-bunny-navy">{address.name} ({address.phone})</p>
+              <p>{address.fullAddress}, {address.area}, {address.district}, {address.division}</p>
+              {isGuest && guestEmail && <p className="text-bunny-blue mt-1 text-xs">Guest: {guestEmail}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Step 2: Payment */}
+        <div className={`bg-white border transition-all duration-300 rounded-2xl overflow-hidden ${step === 2 ? "border-bunny-navy shadow-lg shadow-black/5" : "border-bunny-border opacity-70"}`}>
+          <div className="bg-bunny-muted/30 px-6 py-4 flex items-center justify-between border-b border-bunny-border">
+            <div className="flex items-center gap-3">
+              <CreditCard className={`w-5 h-5 ${step === 2 ? "text-bunny-navy" : "text-bunny-text-muted"}`} />
+              <h2 className="font-heading font-bold text-lg">Payment Method</h2>
+            </div>
+            {step > 2 && <button onClick={() => setStep(2)} className="text-xs font-bold uppercase tracking-widest text-bunny-blue hover:text-bunny-navy transition-colors">Edit</button>}
+          </div>
+
+          {step === 2 && (
+            <div className="p-6">
+              <form onSubmit={handleSubmitStep2} className="space-y-4">
+                {enabledPaymentMethods.includes("COD") && (
+                  <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-300 ${paymentMethod === "COD" ? "border-bunny-navy bg-bunny-muted/20 shadow-sm" : "border-bunny-border hover:border-bunny-navy/30"}`}>
+                    <input type="radio" name="payment" value="COD" checked={paymentMethod === "COD"} onChange={() => setPaymentMethod("COD")} className="w-4 h-4 accent-bunny-navy" />
+                    <div className="ml-4">
+                      <span className="font-bold block text-sm">Cash on Delivery</span>
+                      <span className="text-xs text-bunny-text-muted">Pay in cash when your order arrives</span>
+                      {paymentMethod === "COD" && depositInfo?.required && (
+                        <p className="text-xs text-bunny-blue font-medium mt-1.5">
+                          ৳{depositInfo.amount} advance via bKash required. Remaining ৳{(total - depositInfo.amount).toLocaleString()} paid on delivery.
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                )}
+                {enabledPaymentMethods.includes("BKASH") && (
+                  <div className={`border rounded-xl transition-all duration-300 ${paymentMethod === "BKASH" ? "border-bunny-navy shadow-sm" : "border-bunny-border"}`}>
+                    <label className={`flex items-center p-4 cursor-pointer ${paymentMethod === "BKASH" ? "bg-bunny-muted/20" : "hover:bg-bunny-muted/10"} rounded-xl`}>
+                      <input type="radio" name="payment" value="BKASH" checked={paymentMethod === "BKASH"} onChange={() => setPaymentMethod("BKASH")} className="w-4 h-4 accent-bunny-navy" />
+                      <div className="ml-4 flex items-center gap-2">
+                        <span className="font-bold block text-sm">bKash</span>
+                        {isManualBkash
+                          ? <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Manual</span>
+                          : <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Fast</span>}
+                      </div>
+                    </label>
+                    {paymentMethod === "BKASH" && isManualBkash && (
+                      <ManualPaymentForm
+                        method="bKash"
+                        merchantNumber={bkashMerchantNumber}
+                        amount={total}
+                        trxId={manualTrxId}
+                        setTrxId={setManualTrxId}
+                        screenshot={manualScreenshot}
+                        setScreenshot={setManualScreenshot}
+                        uploading={uploadingScreenshot}
+                        uploadedUrl={manualScreenshotUrl}
+                      />
+                    )}
+                  </div>
+                )}
+                {enabledPaymentMethods.includes("NAGAD") && (
+                  <div className={`border rounded-xl transition-all duration-300 ${paymentMethod === "NAGAD" ? "border-bunny-navy shadow-sm" : "border-bunny-border"}`}>
+                    <label className={`flex items-center p-4 cursor-pointer ${paymentMethod === "NAGAD" ? "bg-bunny-muted/20" : "hover:bg-bunny-muted/10"} rounded-xl`}>
+                      <input type="radio" name="payment" value="NAGAD" checked={paymentMethod === "NAGAD"} onChange={() => setPaymentMethod("NAGAD")} className="w-4 h-4 accent-bunny-navy" />
+                      <div className="ml-4 flex items-center gap-2">
+                        <span className="font-bold block text-sm">Nagad</span>
+                        {isManualNagad && <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Manual</span>}
+                      </div>
+                    </label>
+                    {paymentMethod === "NAGAD" && isManualNagad && (
+                      <ManualPaymentForm
+                        method="Nagad"
+                        merchantNumber={nagadMerchantNumber}
+                        amount={total}
+                        trxId={manualTrxId}
+                        setTrxId={setManualTrxId}
+                        screenshot={manualScreenshot}
+                        setScreenshot={setManualScreenshot}
+                        uploading={uploadingScreenshot}
+                        uploadedUrl={manualScreenshotUrl}
+                      />
+                    )}
+                  </div>
+                )}
+                {/* Preferred delivery date */}
+                <div className="border border-bunny-border rounded-xl p-4 space-y-3">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+                    <Calendar className="w-4 h-4" /> Preferred Delivery Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    min={minDeliveryDate}
+                    max={maxDeliveryDate}
+                    onChange={e => setDeliveryDate(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-bunny-text-muted">We will try our best to deliver by your preferred date.</p>
+                </div>
+
+                <div className="pt-4">
+                  <button type="submit" className="w-full md:w-auto md:float-right px-8 py-4 bg-bunny-navy text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-bunny-blue transition-colors rounded-full text-xs">
+                    Continue <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {step > 2 && (
+            <div className="p-6 text-sm space-y-1">
+              <span className="font-bold text-bunny-navy bg-bunny-muted px-3 py-1 rounded">
+                {paymentMethod === "COD" ? "Cash on Delivery" : paymentMethod}
+              </span>
+              {deliveryDate && (
+                <p className="text-xs text-bunny-text-muted pt-2">Preferred delivery: {new Date(deliveryDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Step 3: Extras & Review */}
+        <div className={`bg-white border transition-all duration-300 rounded-2xl overflow-hidden ${step === 3 ? "border-bunny-navy shadow-lg shadow-black/5" : "border-bunny-border opacity-70"}`}>
+          <div className="bg-bunny-muted/30 px-6 py-4 flex items-center border-b border-bunny-border gap-3">
+            <ClipboardCheck className={`w-5 h-5 ${step === 3 ? "text-bunny-navy" : "text-bunny-text-muted"}`} />
+            <h2 className="font-heading font-bold text-lg">Extras & Review</h2>
+          </div>
+
+          {step === 3 && (
+            <div className="p-6 space-y-6">
+
+              {/* Custom checkout fields for step 3 */}
+              {checkoutFields.filter(f => f.step === 3).map(field => (
+                <div key={field.id} className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+                    {field.label}{field.isRequired ? " *" : ""}
+                  </label>
+                  {field.type === "SELECT" ? (
+                    <select
+                      required={field.isRequired}
+                      value={customFields[field.id] || ""}
+                      onChange={e => setCustomFields({ ...customFields, [field.id]: e.target.value })}
+                      className={inputCls}
+                    >
+                      <option value="">Select…</option>
+                      {(field.options as string[]).map((opt: string) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : field.type === "TEXTAREA" ? (
+                    <textarea
+                      required={field.isRequired}
+                      rows={2}
+                      value={customFields[field.id] || ""}
+                      onChange={e => setCustomFields({ ...customFields, [field.id]: e.target.value })}
+                      placeholder={field.placeholder || ""}
+                      className={`${inputCls} resize-none`}
+                    />
+                  ) : (
+                    <input
+                      type={field.type === "DATE" ? "date" : field.type === "NUMBER" ? "number" : "text"}
+                      required={field.isRequired}
+                      value={customFields[field.id] || ""}
+                      onChange={e => setCustomFields({ ...customFields, [field.id]: e.target.value })}
+                      placeholder={field.placeholder || ""}
+                      className={inputCls}
+                    />
+                  )}
+                </div>
+              ))}
+
+              {/* Loyalty points */}
+              {userId && loyaltyBalance > 0 && (
+                <div className="border border-bunny-border rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-4 p-4 cursor-pointer hover:bg-bunny-muted/20 transition-colors">
+                    <input type="checkbox" checked={redeemPoints} onChange={e => { setRedeemPoints(e.target.checked); if (!e.target.checked) setPointsToRedeem(0) }} className="w-4 h-4 accent-bunny-navy rounded" />
+                    <Star className="w-5 h-5 text-bunny-blue shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Redeem Loyalty Points</p>
+                      <p className="text-xs text-bunny-text-muted">You have {loyaltyBalance.toLocaleString()} points · max discount ৳{loyaltyMaxDiscount}</p>
+                    </div>
+                  </label>
+                  {redeemPoints && (
+                    <div className="border-t border-bunny-border p-4 bg-bunny-muted/10 space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted block">Discount amount (৳)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={loyaltyMaxDiscount}
+                        value={pointsToRedeem}
+                        onChange={e => setPointsToRedeem(Math.min(Number(e.target.value), loyaltyMaxDiscount))}
+                        className={inputCls}
+                        placeholder={`Max ৳${loyaltyMaxDiscount}`}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Store credit */}
+              {userId && storeCreditBalance > 0 && (
+                <div className="border border-bunny-border rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-4 p-4 cursor-pointer hover:bg-bunny-muted/20 transition-colors">
+                    <input type="checkbox" checked={redeemCredit} onChange={e => { setRedeemCredit(e.target.checked); if (!e.target.checked) setCreditToRedeem(0) }} className="w-4 h-4 accent-bunny-navy rounded" />
+                    <Wallet className="w-5 h-5 text-bunny-success shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Use Store Credit</p>
+                      <p className="text-xs text-bunny-text-muted">Balance: ৳{storeCreditBalance.toLocaleString()}</p>
+                    </div>
+                  </label>
+                  {redeemCredit && (
+                    <div className="border-t border-bunny-border p-4 bg-bunny-muted/10 space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted block">Amount to use (৳)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={storeCreditBalance}
+                        value={creditToRedeem}
+                        onChange={e => setCreditToRedeem(Math.min(Number(e.target.value), storeCreditBalance))}
+                        className={inputCls}
+                        placeholder={`Max ৳${storeCreditBalance}`}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Coupon code */}
+              <div className="border border-bunny-border rounded-xl p-4 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+                  <Tag className="w-4 h-4" /> Coupon Code
+                </label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-bunny-success/10 border border-bunny-success/30 rounded-lg px-4 py-3">
+                    <div>
+                      <p className="font-bold text-sm text-bunny-success">{appliedCoupon.couponCode}</p>
+                      <p className="text-xs text-bunny-text-muted">{appliedCoupon.message}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setAppliedCoupon(null); setCouponCode("") }}
+                      className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-widest"
+                    >Remove</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError("") }}
+                      placeholder="Enter coupon code"
+                      className={`${inputCls} flex-1`}
+                      onKeyDown={e => e.key === "Enter" && handleApplyCoupon()}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="px-5 py-3 bg-bunny-navy text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-bunny-blue transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >{couponLoading ? "..." : "Apply"}</button>
+                  </div>
+                )}
+                {couponError && <p className="text-xs text-red-500">{couponError}</p>}
+              </div>
+
+              {/* Gift card */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+                  <Gift className="w-4 h-4" /> Gift Card
+                </label>
+                {appliedGC ? (
+                  <div className="flex items-center justify-between bg-bunny-success/10 border border-bunny-success/30 rounded-lg px-4 py-3">
+                    <div>
+                      <p className="font-bold text-sm text-bunny-success font-mono">{appliedGC.code}</p>
+                      <p className="text-xs text-bunny-text-muted">৳{appliedGC.balance.toLocaleString()} available · ৳{gcDiscount.toLocaleString()} applied</p>
+                    </div>
+                    <button type="button" onClick={() => { setAppliedGC(null); setGcCode("") }} className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-widest">Remove</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={gcCode}
+                      onChange={e => { setGcCode(e.target.value.toUpperCase()); setGcError("") }}
+                      placeholder="GC-XXXX-XXXX-XXXX"
+                      className={`${inputCls} flex-1 font-mono`}
+                      onKeyDown={e => e.key === "Enter" && handleApplyGC()}
+                    />
+                    <button type="button" onClick={handleApplyGC} disabled={gcLoading || !gcCode.trim()} className="px-5 py-3 bg-bunny-navy text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-bunny-blue transition-colors disabled:opacity-50 whitespace-nowrap">{gcLoading ? "..." : "Apply"}</button>
+                  </div>
+                )}
+                {gcError && <p className="text-xs text-red-500">{gcError}</p>}
+              </div>
+
+              {/* Order note */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+                  <MessageSquare className="w-4 h-4" /> Order Note / Special Instructions
+                </label>
+                <textarea
+                  rows={3}
+                  value={orderNote}
+                  onChange={e => setOrderNote(e.target.value)}
+                  placeholder="Any special delivery instructions, preferred time, etc."
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+
+              {/* Gift wrap */}
+              {giftWrapEnabled && (
+                <div className="border border-bunny-border rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-4 p-4 cursor-pointer hover:bg-bunny-muted/20 transition-colors">
+                    <input type="checkbox" checked={giftWrap} onChange={e => setGiftWrap(e.target.checked)} className="w-4 h-4 accent-bunny-navy rounded" />
+                    <Gift className="w-5 h-5 text-bunny-blue shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Add Gift Wrapping</p>
+                      <p className="text-xs text-bunny-text-muted">Premium gift box with ribbon — ৳{giftWrapCharge}</p>
+                    </div>
+                    <span className="font-mono font-bold text-sm">+৳{giftWrapCharge}</span>
+                  </label>
+                  {giftWrap && (
+                    <div className="border-t border-bunny-border p-4 bg-bunny-muted/10">
+                      <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted block mb-2">Gift Message (max 160 characters)</label>
+                      <textarea
+                        rows={3}
+                        maxLength={160}
+                        value={giftMessage}
+                        onChange={e => setGiftMessage(e.target.value)}
+                        placeholder="Write a personal message for the recipient..."
+                        className={`${inputCls} resize-none`}
+                      />
+                      <p className="text-xs text-bunny-text-muted mt-1 text-right">{giftMessage.length}/160</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-xs text-bunny-text-muted">By placing this order you agree to our Terms of Service and Privacy Policy.</p>
+              <button
+                onClick={handlePlaceOrder}
+                disabled={loading}
+                className="w-full py-4 bg-bunny-navy text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-bunny-blue hover:shadow-lg hover:shadow-bunny-blue/20 transition-all duration-300 rounded-full"
+              >
+                {loading ? "Processing Securely..." : "Confirm & Place Order"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Order Summary Sidebar */}
+      <div className="w-full lg:w-1/3">
+        <div className="bg-white border border-bunny-border rounded-2xl p-6 sticky top-24">
+          <h2 className="text-xl font-heading font-bold mb-6">Order Summary</h2>
+          <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
+            {items.map((item) => (
+              <div key={item.variantId} className="flex gap-4">
+                <div className="relative h-20 w-16 bg-bunny-muted shrink-0 rounded overflow-hidden">
+                  <Image src={item.image || "/placeholder.jpg"} alt={item.name} fill sizes="64px" className="object-cover" />
+                </div>
+                <div className="flex-1 text-sm flex flex-col justify-center">
+                  <h4 className="font-medium line-clamp-1">{item.name}</h4>
+                  <p className="text-bunny-text-muted text-xs mt-0.5">{item.size} / {item.color}</p>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-bunny-text-muted">Qty: {item.quantity}</span>
+                    <span className="font-mono font-bold">৳{(item.price * item.quantity).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-bunny-border pt-6 space-y-3 text-sm">
+            <div className="flex justify-between text-bunny-text-muted">
+              <span>Subtotal</span>
+              <span className="font-mono">৳{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-bunny-text-muted">
+              <span>Shipping</span>
+              <span className="font-mono">{shippingCharge === 0 ? "Free" : `৳${shippingCharge}`}</span>
+            </div>
+            {taxEnabled && taxAmount > 0 && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>{taxLabel} ({taxRate}%)</span>
+                <span className="font-mono">৳{taxAmount.toLocaleString()}</span>
+              </div>
+            )}
+            {giftWrap && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>Gift Wrapping</span>
+                <span className="font-mono">৳{giftWrapCharge}</span>
+              </div>
+            )}
+            {loyaltyDiscount > 0 && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>Loyalty Points</span>
+                <span className="font-mono text-bunny-success">−৳{loyaltyDiscount.toLocaleString()}</span>
+              </div>
+            )}
+            {creditDiscount > 0 && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>Store Credit</span>
+                <span className="font-mono text-bunny-success">−৳{creditDiscount.toLocaleString()}</span>
+              </div>
+            )}
+            {couponDiscount > 0 && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>Coupon ({appliedCoupon?.couponCode})</span>
+                <span className="font-mono text-bunny-success">−৳{couponDiscount.toLocaleString()}</span>
+              </div>
+            )}
+            {gcDiscount > 0 && (
+              <div className="flex justify-between text-bunny-text-muted">
+                <span>Gift Card</span>
+                <span className="font-mono text-bunny-success">−৳{gcDiscount.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-bunny-border pt-4 font-bold text-lg items-center">
+              <span>Total</span>
+              <span className="font-mono text-2xl">৳{total.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ManualPaymentForm({
+  method,
+  merchantNumber,
+  amount,
+  trxId,
+  setTrxId,
+  screenshot,
+  setScreenshot,
+  uploading,
+  uploadedUrl,
+}: {
+  method: string
+  merchantNumber: string
+  amount: number
+  trxId: string
+  setTrxId: (v: string) => void
+  screenshot: File | null
+  setScreenshot: (f: File | null) => void
+  uploading: boolean
+  uploadedUrl: string
+}) {
+  return (
+    <div className="px-4 pb-4 space-y-4 border-t border-bunny-border/50 pt-3">
+      {/* Instructions */}
+      <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 space-y-1.5 text-sm">
+        <p className="font-bold text-pink-800">How to pay via {method}:</p>
+        <ol className="list-decimal list-inside space-y-1 text-pink-700 text-xs">
+          <li>Open your {method} app and go to <strong>Send Money</strong></li>
+          <li>Send <strong>৳{amount.toLocaleString()}</strong> to <strong>{merchantNumber}</strong></li>
+          <li>Copy the Transaction ID from the confirmation screen</li>
+          <li>Paste it below and attach a screenshot</li>
+        </ol>
+      </div>
+
+      {/* Merchant number */}
+      <div className="flex items-center justify-between bg-bunny-muted rounded-lg px-4 py-3">
+        <span className="text-xs text-bunny-text-muted uppercase tracking-widest font-bold">{method} Number</span>
+        <span className="font-mono font-bold text-bunny-navy text-base">{merchantNumber}</span>
+      </div>
+
+      {/* Transaction ID */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+          Transaction ID <span className="text-bunny-error">*</span>
+        </label>
+        <input
+          type="text"
+          value={trxId}
+          onChange={e => setTrxId(e.target.value)}
+          placeholder="e.g. 8N7A3K2X1M"
+          required
+          className="w-full bg-white border border-bunny-border focus:border-bunny-blue rounded-lg px-4 py-3 text-base md:text-sm outline-none transition-all font-mono"
+        />
+      </div>
+
+      {/* Screenshot upload */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">
+          Payment Screenshot <span className="text-bunny-text-muted text-[10px] font-normal normal-case">(optional but recommended)</span>
+        </label>
+        {uploadedUrl ? (
+          <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            <span>✓ Screenshot uploaded</span>
+            <button type="button" onClick={() => setScreenshot(null)} className="text-green-600 underline">change</button>
+          </div>
+        ) : (
+          <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg py-5 cursor-pointer transition-colors ${screenshot ? "border-bunny-blue bg-bunny-blue/5" : "border-bunny-border hover:border-bunny-blue"}`}>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => setScreenshot(e.target.files?.[0] || null)}
+            />
+            {screenshot ? (
+              <p className="text-xs font-medium text-bunny-navy">{screenshot.name}</p>
+            ) : (
+              <>
+                <span className="text-2xl">📎</span>
+                <p className="text-xs text-bunny-text-muted">Tap to attach screenshot</p>
+              </>
+            )}
+          </label>
+        )}
+        {uploading && <p className="text-xs text-bunny-text-muted animate-pulse">Uploading screenshot…</p>}
+      </div>
+    </div>
+  )
+}
