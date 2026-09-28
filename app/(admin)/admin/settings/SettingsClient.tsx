@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import {
-  Store, CreditCard, Truck, Percent, Mail, BarChart2, Users, ChevronRight
+  Store, CreditCard, Truck, Percent, Mail, BarChart2, Users, ChevronRight,
+  Monitor, Smartphone, Eye, Send, Sparkles, CheckCircle2, RefreshCw, Layers, Zap, ExternalLink
 } from "lucide-react"
 
 type Staff = { id: string; name: string; email: string; role: string }
@@ -86,6 +87,72 @@ export function SettingsClient({
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [abandonedCartEmailEnabled, setAbandonedCartEmailEnabled] = useState(initialSettings["abandoned_cart_email_enabled"] === "true")
   const [isAbandonedCartSaving, setIsAbandonedCartSaving] = useState(false)
+
+  // Email Studio State
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState("order_confirmation")
+  const [previewHtml, setPreviewHtml] = useState("")
+  const [previewSubject, setPreviewSubject] = useState("")
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop")
+  const [templateTestEmail, setTemplateTestEmail] = useState("minibunnyforu@gmail.com")
+  const [isSendingTemplateTest, setIsSendingTemplateTest] = useState(false)
+
+  const loadTemplatePreview = async (key: string) => {
+    setIsLoadingPreview(true)
+    try {
+      const res = await fetch(`/api/admin/settings/email-preview?key=${key}`)
+      const data = await res.json()
+      if (res.ok) {
+        setPreviewHtml(data.html || "")
+        setPreviewSubject(data.subject || "")
+      } else {
+        toast.error(data.error || "Failed to load template preview")
+      }
+    } catch {
+      toast.error("Network error loading preview")
+    } finally {
+      setIsLoadingPreview(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "email" && !previewHtml) {
+      loadTemplatePreview(selectedTemplateKey)
+    }
+  }, [activeTab])
+
+  const handleSelectTemplate = (key: string) => {
+    setSelectedTemplateKey(key)
+    loadTemplatePreview(key)
+  }
+
+  const handleSendTemplateTest = async () => {
+    if (!templateTestEmail) {
+      toast.error("Enter a recipient email address")
+      return
+    }
+    setIsSendingTemplateTest(true)
+    try {
+      const res = await fetch("/api/admin/settings/email-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateKey: selectedTemplateKey,
+          recipientEmail: templateTestEmail,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Test email sent to ${templateTestEmail}! Check your inbox.`)
+      } else {
+        toast.error(data.error || "Failed to send test email")
+      }
+    } catch {
+      toast.error("Failed to send test email")
+    } finally {
+      setIsSendingTemplateTest(false)
+    }
+  }
 
   // Tracking
   const [ga4Id, setGa4Id] = useState(initialSettings["ga4_id"] || "")
@@ -399,15 +466,220 @@ export function SettingsClient({
           </div>
         )}
 
-        {/* Email / SMTP */}
+        {/* Email / SMTP & Template Studio */}
         {activeTab === "email" && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold">Email / SMTP</h2>
-              <p className="text-sm text-muted-foreground">All transactional emails route through this config. Leave blank to use the built-in Resend relay.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Email Engine & Template Studio</h2>
+                <p className="text-xs text-muted-foreground">Manage Brevo transactional email delivery, test live boutique templates, and configure automated alerts.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 py-1 px-2.5 font-semibold text-xs flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Brevo API Connected
+                </Badge>
+              </div>
             </div>
+
+            {/* Brevo Gateway Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/90 via-sky-50/80 to-blue-50/80 border border-indigo-200/90 shadow-2xs space-y-3">
+              <div className="flex items-start justify-between flex-wrap gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Zap className="w-5 h-5 fill-current text-amber-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-indigo-950">Brevo High-Deliverability Gateway Active</h3>
+                    <p className="text-xs text-indigo-800/90 mt-0.5">
+                      Sender: <span className="font-semibold text-indigo-950">Mini Bunny &lt;minibunnyforu@gmail.com&gt;</span> &bull; Plan: <span className="font-semibold">300 free emails/day</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Email Template Studio Card */}
+            <Card className="border-slate-200 shadow-sm overflow-hidden">
+              <CardHeader className="bg-slate-50/60 border-b border-slate-100 pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-sky-600" />
+                      <span>Live Boutique Email Template Studio</span>
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Preview and test all 14 responsive email templates crafted with the Soft Baby Boutique design system.
+                    </CardDescription>
+                  </div>
+
+                  {/* Template Dropdown */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <select
+                      value={selectedTemplateKey}
+                      onChange={(e) => handleSelectTemplate(e.target.value)}
+                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all min-w-[240px]"
+                    >
+                      <optgroup label="🛍️ Customer Orders">
+                        <option value="order_confirmation">1. Order Confirmed (Itemized + COD)</option>
+                        <option value="shipping_dispatched">2. Shipment Dispatched (Tracking Badge)</option>
+                        <option value="order_delivered">3. Delivery Confirmed (Care Notice)</option>
+                        <option value="order_status_update">4. Order Status Update</option>
+                        <option value="return_update">5. Return / Refund Decision</option>
+                      </optgroup>
+                      <optgroup label="💌 Marketing & Retention">
+                        <option value="abandoned_cart">6. Abandoned Cart Recovery</option>
+                        <option value="welcome_email">7. Member Welcome & Perks</option>
+                        <option value="gift_card">8. Gift Card Received (Voucher)</option>
+                        <option value="store_credit">9. Store Credit Added (Wallet)</option>
+                        <option value="back_in_stock">10. Back In Stock Watchlist Alert</option>
+                        <option value="review_request">11. Post-Purchase Baby Outfit Review</option>
+                      </optgroup>
+                      <optgroup label="🔐 Security & Auth">
+                        <option value="password_reset">12. Password Reset / OTP Verification</option>
+                      </optgroup>
+                      <optgroup label="🚨 Admin Operational Alerts">
+                        <option value="admin_new_order">13. Admin: Instant New Order Alert</option>
+                        <option value="admin_low_stock">14. Admin: Low Stock Inventory Warning</option>
+                      </optgroup>
+                    </select>
+
+                    {/* Viewport Toggles */}
+                    <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("desktop")}
+                        className={cn(
+                          "px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors",
+                          previewDevice === "desktop" ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                        )}
+                        title="Desktop View (600px)"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Desktop</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("mobile")}
+                        className={cn(
+                          "px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors",
+                          previewDevice === "mobile" ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                        )}
+                        title="Mobile View (375px)"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Mobile</span>
+                      </button>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadTemplatePreview(selectedTemplateKey)}
+                      disabled={isLoadingPreview}
+                      className="h-9 px-2.5 text-xs"
+                      title="Refresh Preview"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5", isLoadingPreview && "animate-spin text-sky-600")} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Subject Preview Bar */}
+                {previewSubject && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs">
+                    <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Subject:</span>
+                    <span className="font-semibold text-slate-800 bg-white border border-slate-200/80 px-2.5 py-1 rounded-md shadow-2xs font-sans">
+                      {previewSubject}
+                    </span>
+                  </div>
+                )}
+              </CardHeader>
+
+              <CardContent className="p-0 bg-slate-100/70">
+                {/* Visual Iframe Frame */}
+                <div className="p-4 sm:p-6 flex justify-center items-start min-h-[520px]">
+                  <div
+                    className={cn(
+                      "bg-white rounded-2xl shadow-xl transition-all duration-300 border border-slate-200 overflow-hidden flex flex-col",
+                      previewDevice === "desktop" ? "w-full max-w-[620px]" : "w-[375px]"
+                    )}
+                  >
+                    {/* Frame Top Bar */}
+                    <div className="bg-slate-800 text-slate-200 px-3 py-1.5 flex items-center justify-between text-[10px] font-mono select-none">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-400" />
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="ml-2 text-slate-400">Mini Bunny Email Client Preview</span>
+                      </div>
+                      <span>{previewDevice === "desktop" ? "600px" : "375px"}</span>
+                    </div>
+
+                    {/* Rendered HTML */}
+                    <iframe
+                      srcDoc={previewHtml}
+                      title="Email Template Preview"
+                      className="w-full h-[580px] border-none bg-slate-50"
+                      sandbox="allow-same-origin allow-scripts"
+                    />
+                  </div>
+                </div>
+
+                {/* 1-Click Test Sender Footer */}
+                <div className="p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Send Test Email:</span>
+                    <Input
+                      type="email"
+                      value={templateTestEmail}
+                      onChange={(e) => setTemplateTestEmail(e.target.value)}
+                      placeholder="recipient@example.com"
+                      className="h-9 text-xs w-full sm:w-72 rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSendTemplateTest}
+                    disabled={isSendingTemplateTest || !previewHtml}
+                    className="h-9 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-xs font-bold shadow-sm w-full sm:w-auto flex items-center gap-1.5"
+                  >
+                    {isSendingTemplateTest ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sending via Brevo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Test Email ({selectedTemplateKey})</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Automation Rules */}
             <Card>
-              <CardHeader><CardTitle className="text-base">SMTP Server</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Automated Customer Journeys</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <ToggleRow
+                  label="Send abandoned cart recovery emails"
+                  description="Automatically emails a customer's saved cart 1 hour and 24 hours after they leave checkout idle (24h email includes BUNNYBABY5 discount code)."
+                  checked={abandonedCartEmailEnabled} onChange={setAbandonedCartEmailEnabled}
+                />
+                <Button onClick={handleSaveAbandonedCart} disabled={isAbandonedCartSaving}>
+                  {isAbandonedCartSaving ? "Saving…" : "Save Automation Settings"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Custom SMTP Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Custom SMTP Server (Optional Override)</CardTitle>
+                <CardDescription>By default, emails route through the high-speed Brevo REST API. You can configure custom SMTP below if desired.</CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
@@ -424,46 +696,14 @@ export function SettingsClient({
                   <Field label="SMTP Username"><Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder="noreply@store.com" /></Field>
                   <Field label="SMTP Password"><Input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder="App password" /></Field>
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Sender Details</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="From Name"><Input value={smtpFromName} onChange={(e) => setSmtpFromName(e.target.value)} placeholder="Mini Bunny" /></Field>
-                  <Field label="From Email"><Input type="email" value={smtpFromEmail} onChange={(e) => setSmtpFromEmail(e.target.value)} placeholder="noreply@minibunny.com" /></Field>
+                  <Field label="From Email"><Input type="email" value={smtpFromEmail} onChange={(e) => setSmtpFromEmail(e.target.value)} placeholder="minibunnyforu@gmail.com" /></Field>
                 </div>
-                <Field label="Admin Notification Email" hint="Receives an email every time a new order is placed. Falls back to Support Email if empty.">
-                  <Input type="email" value={adminNotificationEmail} onChange={(e) => setAdminNotificationEmail(e.target.value)} placeholder="orders@minibunny.com" />
+                <Field label="Admin Notification Email" hint="Receives an alert every time a new order is placed.">
+                  <Input type="email" value={adminNotificationEmail} onChange={(e) => setAdminNotificationEmail(e.target.value)} placeholder="minibunnyforu@gmail.com" />
                 </Field>
-              </CardContent>
-            </Card>
-            <Button onClick={handleSaveSmtp} disabled={isSmtpSaving}>{isSmtpSaving ? "Saving…" : "Save SMTP Settings"}</Button>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Abandoned Cart Recovery</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <ToggleRow
-                  label="Send abandoned cart emails"
-                  description="Emails a customer's saved cart 1 hour and 24 hours after they leave it idle (24h email includes a discount code if a COMEBACK coupon is active)."
-                  checked={abandonedCartEmailEnabled} onChange={setAbandonedCartEmailEnabled}
-                />
-                <Button onClick={handleSaveAbandonedCart} disabled={isAbandonedCartSaving}>
-                  {isAbandonedCartSaving ? "Saving…" : "Save Abandoned Cart Settings"}
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Test Email</CardTitle>
-                <CardDescription>Verify your config by sending a test. Save settings above first.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Input type="email" value={testEmailTo} onChange={(e) => setTestEmailTo(e.target.value)} placeholder="your@email.com" className="flex-1" />
-                  <Button variant="outline" onClick={handleSendTestEmail} disabled={isSendingTest}>
-                    {isSendingTest ? "Sending…" : "Send Test"}
-                  </Button>
-                </div>
+                <Button onClick={handleSaveSmtp} disabled={isSmtpSaving}>{isSmtpSaving ? "Saving…" : "Save Custom SMTP Settings"}</Button>
               </CardContent>
             </Card>
           </div>

@@ -1,5 +1,10 @@
 import prisma from "@/lib/prisma"
 import { CustomerClient } from "./CustomerClient"
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader"
+import { AdminCard } from "@/components/admin/ui/AdminCard"
+import { Users, Download } from "lucide-react"
+
+export const dynamic = "force-dynamic"
 
 export default async function CustomersPage({
   searchParams,
@@ -13,6 +18,7 @@ export default async function CustomersPage({
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },
           { email: { contains: search, mode: "insensitive" as const } },
+          { phone: { contains: search } },
         ],
       }
     : {}
@@ -26,7 +32,7 @@ export default async function CustomersPage({
     orderBy: { createdAt: "desc" },
   })
 
-  // Guest orders (no user account) — includes orders with AND without guestEmail
+  // Guest orders (no user account)
   const guestOrders = await prisma.order.findMany({
     where: {
       userId: null,
@@ -43,12 +49,14 @@ export default async function CustomersPage({
     orderBy: { createdAt: "desc" },
   })
 
-  // Group by guestEmail when present, otherwise by "name|phone" fingerprint
+  // Group guest orders
   const guestMap = new Map<string, typeof guestOrders>()
   for (const o of guestOrders) {
     const key = o.guestEmail
       ? `email:${o.guestEmail}`
-      : `name:${(o.shippingName || "Guest").toLowerCase().trim()}|${(o.shippingPhone || "").trim()}`
+      : `name:${(o.shippingName || "Guest").toLowerCase().trim()}|${(
+          o.shippingPhone || ""
+        ).trim()}`
     if (!guestMap.has(key)) guestMap.set(key, [])
     guestMap.get(key)!.push(o)
   }
@@ -59,15 +67,14 @@ export default async function CustomersPage({
       .reduce((sum, o) => sum + Number(o.total), 0)
     return {
       id: user.id,
-      name: user.name || "—",
-      email: user.email,
-      phone: user.phone || "—",
+      name: user.name || "Unnamed Customer",
+      email: user.email || "",
+      phone: user.phone || "",
       role: user.role,
       isLocked: user.isLocked,
       joinedDate: user.createdAt.toISOString(),
       totalOrders: user.orders.length,
       totalSpent,
-      lastOrderAt: user.orders[0]?.createdAt.toISOString() ?? user.createdAt.toISOString(),
       orders: user.orders.map((o) => ({
         id: o.id,
         orderNumber: o.orderNumber,
@@ -75,26 +82,25 @@ export default async function CustomersPage({
         total: Number(o.total),
         createdAt: o.createdAt.toISOString(),
       })),
+      lastOrderAt: user.orders[0]?.createdAt.toISOString(),
     }
   })
 
-  const guestCustomers = Array.from(guestMap.entries()).map(([, orders]) => {
-    const latest = orders[0]
+  const guestCustomers = Array.from(guestMap.entries()).map(([key, orders]) => {
+    const first = orders[0]
     const totalSpent = orders
       .filter((o) => o.paymentStatus === "PAID" || o.status === "DELIVERED")
       .reduce((sum, o) => sum + Number(o.total), 0)
-    const email = latest.guestEmail ?? `guest-${latest.id}@no-email`
     return {
-      id: `guest:${email}`,
-      name: latest.shippingName || "Guest",
-      email: latest.guestEmail ?? "—",
-      phone: latest.shippingPhone || "—",
+      id: `guest:${key}`,
+      name: first.shippingName || "Guest Shopper",
+      email: first.guestEmail || "",
+      phone: first.shippingPhone || "",
       role: "GUEST",
       isLocked: false,
-      joinedDate: latest.createdAt.toISOString(),
+      joinedDate: orders[orders.length - 1].createdAt.toISOString(),
       totalOrders: orders.length,
       totalSpent,
-      lastOrderAt: latest.createdAt.toISOString(),
       orders: orders.map((o) => ({
         id: o.id,
         orderNumber: o.orderNumber,
@@ -102,25 +108,32 @@ export default async function CustomersPage({
         total: Number(o.total),
         createdAt: o.createdAt.toISOString(),
       })),
+      lastOrderAt: first.createdAt.toISOString(),
     }
   })
 
-  // Merge and sort by most recent activity
-  const customers = [...registeredCustomers, ...guestCustomers].sort(
-    (a, b) => new Date(b.lastOrderAt).getTime() - new Date(a.lastOrderAt).getTime()
-  )
+  const allCustomers = [...registeredCustomers, ...guestCustomers]
+  const total = allCustomers.length
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {registeredCustomers.length} registered · {guestCustomers.length} guests
-          </p>
-        </div>
-      </div>
-      <CustomerClient data={customers} />
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Parents & Customers"
+        description="View customer profiles, order history, VIP tiers, and account status."
+        breadcrumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Customers" },
+        ]}
+        badge={
+          <span className="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+            {total} Profiles
+          </span>
+        }
+      />
+
+      <AdminCard noPadding>
+        <CustomerClient data={allCustomers} />
+      </AdminCard>
     </div>
   )
 }

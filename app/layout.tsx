@@ -118,8 +118,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   }
 
   return (
-    <html lang="en" className={cn("font-sans", sans.variable, outfit.variable, spaceGrotesk.variable)}>
-      <body className="antialiased text-bunny-text bg-bunny-bg selection:bg-bunny-pink/20 selection:text-bunny-blue-900">
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", sans.variable, outfit.variable, spaceGrotesk.variable)}>
+      <body suppressHydrationWarning className="antialiased text-bunny-text bg-bunny-bg selection:bg-bunny-pink/20 selection:text-bunny-blue-900">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}

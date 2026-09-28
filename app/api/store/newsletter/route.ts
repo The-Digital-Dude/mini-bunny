@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/rateLimit"
+import { brevoSubscribe } from "@/lib/brevo"
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -22,10 +23,13 @@ export async function POST(req: NextRequest) {
   if (existing) {
     if (existing.status === "unsubscribed") {
       await prisma.marketingSubscriber.update({ where: { email }, data: { status: "subscribed" } })
+      await brevoSubscribe(email).catch(() => {})
     }
     return NextResponse.json({ ok: true, message: "Already subscribed" })
   }
 
   await prisma.marketingSubscriber.create({ data: { email, provider: "brevo", status: "subscribed" } })
+  await brevoSubscribe(email).catch(() => {})
+
   return NextResponse.json({ ok: true, message: "Subscribed successfully" })
 }

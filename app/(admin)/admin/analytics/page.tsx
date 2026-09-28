@@ -33,6 +33,10 @@ export default async function AnalyticsPage() {
     revenue7d,
     revenue30d,
     revenue90d,
+    // Orders with items for 30d COGS & profit calculation
+    orders30dWithItems,
+    // Expenses last 30d
+    expenses30d,
     // AOV
     aovData,
     // New customers last 30d
@@ -41,10 +45,12 @@ export default async function AnalyticsPage() {
     totalCustomers,
     // Repeat customers (more than 1 order)
     repeatCustomers,
+    // Categories for breakdown
+    categories,
   ] = await Promise.all([
     prisma.order.findMany({
       where: { createdAt: { gte: d30 }, status: { not: "CANCELLED" } },
-      select: { createdAt: true, total: true },
+      select: { createdAt: true, total: true, subtotal: true, discount: true, shippingCharge: true },
     }).catch(() => []),
 
     prisma.funnelEvent.groupBy({
@@ -97,11 +103,28 @@ export default async function AnalyticsPage() {
     prisma.order.aggregate({ where: { createdAt: { gte: d30 }, status: { not: "CANCELLED" } }, _sum: { total: true } }).catch(() => ({ _sum: { total: 0 } })),
     prisma.order.aggregate({ where: { createdAt: { gte: d90 }, status: { not: "CANCELLED" } }, _sum: { total: true } }).catch(() => ({ _sum: { total: 0 } })),
 
+    prisma.order.findMany({
+      where: { createdAt: { gte: d30 }, status: { not: "CANCELLED" } },
+      include: {
+        items: {
+          include: {
+            variant: { select: { costPrice: true } },
+          },
+        },
+      },
+    }).catch(() => []),
+
+    prisma.expense.findMany({
+      where: { date: { gte: d30 } },
+      select: { amount: true, category: true },
+    }).catch(() => []),
+
     prisma.order.aggregate({ where: { createdAt: { gte: d30 }, status: { not: "CANCELLED" } }, _avg: { total: true }, _count: true }).catch(() => ({ _avg: { total: 0 }, _count: 0 })),
 
     prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: d30 } } }).catch(() => 0),
     prisma.user.count({ where: { role: "CUSTOMER" } }).catch(() => 0),
     prisma.order.groupBy({ by: ["userId"], _count: { userId: true }, having: { userId: { _count: { gt: 1 } } } }).then(r => r.length).catch(() => 0),
+    prisma.category.findMany({ select: { id: true, name: true } }).catch(() => []),
   ])
 
   // Build 30-day revenue chart
@@ -109,16 +132,62 @@ export default async function AnalyticsPage() {
   const revenueByDay = Array.from({ length: 30 }, (_, i) => {
     const date = new Date(d30.getTime() + i * dayMs)
     const ds = date.toDateString()
-    const total = revenueOrders
-      .filter(o => new Date(o.createdAt).toDateString() === ds)
-      .reduce((s, o) => s + Number(o.total), 0)
+    const matchingOrders = revenueOrders.filter(o => new Date(o.createdAt).toDateString() === ds)
+    const total = matchingOrders.reduce((s, o) => s + Number(o.total), 0)
+    const count = matchingOrders.length
     return {
       date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       total,
+      orders: count,
     }
   })
 
-  // Resolve product IDs → names
+  // ─── Financial P&L calculations (30 Days) ───────────────────────────
+  let grossSubtotal30d = 0
+  let discounts30d = 0
+  let shippingCollected30d = 0
+  let totalCogs30d = 0
+
+  const productPerformanceMap: Record<string, { name: string; units: number; revenue: number; cogs: number }> = {}
+
+  for (const o of orders30dWithItems) {
+    grossSubtotal30d += Number(o.subtotal || 0)
+    discounts30d += Number(o.discount || 0)
+    shippingCollected30d += Number(o.shippingCharge || 0)
+
+    for (const item of o.items) {
+      const itemPrice = Number(item.price)
+      const itemQty = item.quantity
+      const itemCost = Number(item.variant?.costPrice || 0) * itemQty
+      totalCogs30d += itemCost
+
+      if (!productPerformanceMap[item.productId]) {
+        productPerformanceMap[item.productId] = {
+          name: item.productName,
+          units: 0,
+          revenue: 0,
+          cogs: 0,
+        }
+      }
+      productPerformanceMap[item.productId].units += itemQty
+      productPerformanceMap[item.productId].revenue += itemPrice * itemQty
+      productPerformanceMap[item.productId].cogs += itemCost
+    }
+  }
+
+  const totalExpenses30d = expenses30d.reduce((s, e) => s + Number(e.amount), 0)
+  const netRevenue30d = Number(revenue30d._sum.total || 0)
+  const grossProfit30d = (grossSubtotal30d - discounts30d) - totalCogs30d
+  const netProfit30d = netRevenue30d - totalCogs30d - totalExpenses30d
+  const grossMarginPct = grossSubtotal30d > 0 ? Math.round((grossProfit30d / grossSubtotal30d) * 100) : 0
+  const netMarginPct = netRevenue30d > 0 ? Math.round((netProfit30d / netRevenue30d) * 100) : 0
+
+  // Top products by revenue
+  const topProductsByRevenue = Object.values(productPerformanceMap)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8)
+
+  // Resolve product IDs → names for funnel views
   const productIds = [
     ...new Set([
       ...topProductViews.map(r => r.productId!),
@@ -133,11 +202,17 @@ export default async function AnalyticsPage() {
 
   const funnelMap = Object.fromEntries(funnelCounts.map(f => [f.event, f._count.event]))
 
+  // Expenses breakdown
+  const expensesByCategory: Record<string, number> = {}
+  for (const exp of expenses30d) {
+    expensesByCategory[exp.category] = (expensesByCategory[exp.category] || 0) + Number(exp.amount)
+  }
+
   return (
     <AnalyticsDashboard
       revenueByDay={revenueByDay}
       revenue7d={Number(revenue7d._sum.total || 0)}
-      revenue30d={Number(revenue30d._sum.total || 0)}
+      revenue30d={netRevenue30d}
       revenue90d={Number(revenue90d._sum.total || 0)}
       aov={Math.round(Number(aovData._avg.total || 0))}
       orderCount30d={(aovData as any)._count ?? 0}
@@ -150,6 +225,20 @@ export default async function AnalyticsPage() {
       topSearches={topSearches.map(s => ({ query: s.query, count: s._count.query }))}
       zeroResultSearches={zeroResultSearches}
       ordersByStatus={ordersByStatus.map(o => ({ status: o.status, count: o._count.status }))}
+      pnlData={{
+        grossSales: grossSubtotal30d,
+        discounts: discounts30d,
+        shippingCollected: shippingCollected30d,
+        netRevenue: netRevenue30d,
+        cogs: totalCogs30d,
+        grossProfit: grossProfit30d,
+        grossMarginPct,
+        expenses: totalExpenses30d,
+        netProfit: netProfit30d,
+        netMarginPct,
+        expensesByCategory: Object.entries(expensesByCategory).map(([name, amount]) => ({ name, amount })),
+      }}
+      topProductsByRevenue={topProductsByRevenue}
     />
   )
 }

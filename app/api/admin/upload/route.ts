@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/adminAuth"
 import { createAdminClient } from "@/lib/supabase"
+import { cdnUrl } from "@/lib/cdn"
 
 const ALLOWED_BUCKETS = ["product-images", "category-images", "brand-images", "bundle-images", "blog-images"]
 const MAX_WIDTH = 1200
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(filename)
 
-    return NextResponse.json({ url: publicUrl })
+    return NextResponse.json({ url: cdnUrl(publicUrl) })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
