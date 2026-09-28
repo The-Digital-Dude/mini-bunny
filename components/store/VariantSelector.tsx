@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { useCartStore } from "@/store/useCartStore"
 import { useCompareStore } from "@/store/useCompareStore"
 import { useParentProfile } from "@/hooks/useParentProfile"
@@ -9,7 +10,7 @@ import { calculateBabySize } from "@/components/store/SizeQuiz"
 import NotifyMeForm from "@/components/store/NotifyMeForm"
 import SizeGuideModal from "@/components/store/SizeGuideModal"
 import WhatsAppOrderButton from "@/components/store/WhatsAppOrderButton"
-import { Columns2, Truck, Clock, Sparkles, Baby, Calculator, Check, ArrowRight, Heart } from "lucide-react"
+import { Columns2, Truck, Clock, Sparkles, Baby, Calculator, Check, ArrowRight, Heart, ShoppingBag, Zap } from "lucide-react"
 
 export default function VariantSelector({
   product,
@@ -26,8 +27,9 @@ export default function VariantSelector({
   categoryId?: string
   sizeChartImage?: string | null
 }) {
+  const router = useRouter()
   const variants = product.variants || []
-  const addItem = useCartStore((s) => s.addItem)
+  const { addItem, openCart, closeCart } = useCartStore()
   const { toggleItem: toggleCompare, hasItem: inCompare } = useCompareStore()
   const comparing = inCompare(product.id)
   const { profile } = useParentProfile()
@@ -70,9 +72,15 @@ export default function VariantSelector({
   const dispatchDay = shipsToday ? "today" : "tomorrow"
   const arrivalDays = "2–4 business days across Bangladesh"
 
-  const addToCart = () => {
-    if (!activeVariant) return toast.error("Please select a size and color.")
-    if (isOutOfStock) return toast.error("This item is currently out of stock.")
+  const prepareCartItem = () => {
+    if (!activeVariant) {
+      toast.error("Please select a size and color.")
+      return null
+    }
+    if (isOutOfStock) {
+      toast.error("This item is currently out of stock.")
+      return null
+    }
 
     const basePrice = activeVariant.price ?? product.price
     const finalPrice = flashSale ? (
@@ -83,7 +91,7 @@ export default function VariantSelector({
 
     const image = product.images?.[0]?.url || ""
 
-    addItem({
+    return {
       id: activeVariant.id,
       variantId: activeVariant.id,
       productId: product.id,
@@ -94,11 +102,25 @@ export default function VariantSelector({
       color: selectedColor!,
       image,
       quantity: 1,
-    })
+    }
+  }
 
+  const handleAddToCart = () => {
+    const item = prepareCartItem()
+    if (!item) return
+    addItem(item)
+    openCart()
     toast.success(`Added to bag!`, {
       description: `${product.name} — ${selectedSize} / ${selectedColor}`,
     })
+  }
+
+  const handleBuyNow = () => {
+    const item = prepareCartItem()
+    if (!item) return
+    addItem(item)
+    closeCart()
+    router.push("/checkout")
   }
 
   return (
@@ -332,17 +354,34 @@ export default function VariantSelector({
           </div>
         )}
 
-        {/* Add to bag button */}
+        {/* Add To Cart & Buy Now Buttons */}
         {!isOutOfStock ? (
           <>
-            <button
-              id="add-to-bag-btn"
-              onClick={addToCart}
-              disabled={!activeVariant}
-              className="w-full py-4 text-sm font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 bg-[#4A8DB7] hover:bg-[#3d779c] text-white rounded-2xl shadow-md hover:shadow-lg shadow-[#4A8DB7]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {!activeVariant ? "Select a size" : `Add to Bag · ৳${variantEffectivePrice.toLocaleString()}`}
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Add to Bag (Secondary - Opens Drawer) */}
+              <button
+                id="add-to-bag-btn"
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!activeVariant}
+                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl border-2 border-[#4A8DB7] text-[#4A8DB7] bg-[#F0F7FB] hover:bg-[#4A8DB7] hover:text-white shadow-xs hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4 shrink-0" />
+                <span>{!activeVariant ? "Select Option" : "Add to Bag"}</span>
+              </button>
+
+              {/* Buy Now (Primary - Direct Checkout) */}
+              <button
+                id="buy-now-btn"
+                type="button"
+                onClick={handleBuyNow}
+                disabled={!activeVariant}
+                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1E3E5B] to-[#2C5E8A] hover:from-[#152c41] hover:to-[#1E3E5B] text-white shadow-md hover:shadow-lg shadow-[#1E3E5B]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <Zap className="w-4 h-4 fill-amber-300 text-amber-300 shrink-0" />
+                <span>{!activeVariant ? "Select Option" : `Buy Now · ৳${variantEffectivePrice.toLocaleString()}`}</span>
+              </button>
+            </div>
 
             {/* Direct WhatsApp Ordering */}
             <WhatsAppOrderButton

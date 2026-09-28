@@ -20,6 +20,10 @@ interface CartState {
   items: CartItem[];
   isGiftWrapped: boolean;
   giftMessage: string;
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  setIsOpen: (isOpen: boolean) => void;
   addItem: (item: CartItem) => void;
   removeItem: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
@@ -34,6 +38,10 @@ export const useCartStore = create<CartState>()(
       items: [],
       isGiftWrapped: false,
       giftMessage: "",
+      isOpen: false,
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+      setIsOpen: (isOpen) => set({ isOpen }),
       addItem: (item) => {
         fetch("/api/analytics", {
           method: "POST",
@@ -69,6 +77,13 @@ export const useCartStore = create<CartState>()(
       setGiftMessage: (giftMessage) => set({ giftMessage }),
       clearCart: () => set({ items: [], isGiftWrapped: false, giftMessage: "" }),
     }),
-    { name: 'clothing-cart-storage' }
+    {
+      name: 'clothing-cart-storage',
+      partialize: (state) => ({
+        items: state.items,
+        isGiftWrapped: state.isGiftWrapped,
+        giftMessage: state.giftMessage,
+      }),
+    }
   )
 )

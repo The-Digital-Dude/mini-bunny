@@ -106,8 +106,7 @@ export default function CartDrawer({
   itemCount?: number
   freeShippingThreshold?: number | null
 }) {
-  const { items, removeItem, updateQuantity, isGiftWrapped } = useCartStore()
-  const [isOpen, setIsOpen] = useState(false)
+  const { items, removeItem, updateQuantity, isGiftWrapped, isOpen, setIsOpen } = useCartStore()
   const [coupon, setCoupon] = useState("")
   const [useLoyalty, setUseLoyalty] = useState(false)
 

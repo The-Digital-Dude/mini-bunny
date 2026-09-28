@@ -241,7 +241,9 @@ export default function CheckoutForm({
     
     // Validate fields
     const newErrors: Record<string, string> = {}
-    if (isGuest && !guestEmail) newErrors.guestEmail = "Email is required"
+    if (!userId && !guestEmail.trim()) {
+      newErrors.guestEmail = isGuest ? "Email is required for order updates" : "Email is required to create your account"
+    }
     if (!address.name) newErrors.name = "Full Name is required"
     if (!address.phone) newErrors.phone = "Phone is required"
     if (!address.division) newErrors.division = "Division is required"
@@ -452,27 +454,64 @@ export default function CheckoutForm({
 
           {step === 1 && (
             <div className="p-6">
-              {/* Guest vs account toggle */}
-              <div className="flex gap-3 mb-6">
-                <button type="button" onClick={() => setIsGuest(false)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg border transition-all ${!isGuest ? "bg-bunny-navy text-white border-bunny-navy" : "border-bunny-border text-bunny-text-muted hover:border-bunny-navy"}`}>
-                  <User className="w-3.5 h-3.5 inline mr-1.5" />Login / Register
-                </button>
-                <button type="button" onClick={() => setIsGuest(true)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg border transition-all ${isGuest ? "bg-bunny-navy text-white border-bunny-navy" : "border-bunny-border text-bunny-text-muted hover:border-bunny-navy"}`}>
-                  Continue as Guest
-                </button>
-              </div>
+              {/* Guest vs account toggle (Only when not logged in) */}
+              {!userId && (
+                <div className="space-y-3 mb-6">
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsGuest(false)}
+                      className={`flex-1 py-3 px-4 text-xs font-bold uppercase tracking-wider rounded-2xl border-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        !isGuest
+                          ? "bg-[#1E3E5B] text-white border-[#1E3E5B] shadow-md shadow-[#1E3E5B]/20"
+                          : "border-[#EDE8DF] text-[#6C7A89] bg-[#FAF9F5] hover:border-[#1E3E5B]"
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Create Account & Checkout</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsGuest(true)}
+                      className={`flex-1 py-3 px-4 text-xs font-bold uppercase tracking-wider rounded-2xl border-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        isGuest
+                          ? "bg-[#1E3E5B] text-white border-[#1E3E5B] shadow-md shadow-[#1E3E5B]/20"
+                          : "border-[#EDE8DF] text-[#6C7A89] bg-[#FAF9F5] hover:border-[#1E3E5B]"
+                      }`}
+                    >
+                      <span>Guest Order</span>
+                    </button>
+                  </div>
 
-              {!isGuest && (
-                <p className="text-xs text-bunny-text-muted mb-4 p-3 bg-bunny-muted rounded-lg">
-                  <a href="/login?redirect=/checkout" className="text-bunny-blue font-bold hover:underline">Log in</a> to use saved addresses & earn loyalty points. Or fill in below to continue as guest.
-                </p>
+                  {!isGuest ? (
+                    <div className="p-3.5 bg-[#F0F7FB] border border-[#4A8DB7]/30 rounded-xl text-xs text-[#1E3E5B] flex items-center gap-2.5">
+                      <Sparkles className="w-4 h-4 text-[#4A8DB7] shrink-0" />
+                      <p>
+                        We will save your delivery profile and email you a <strong>1-click Magic Login link</strong> to set a password, track live dispatches, and earn Club points. Already have an account? <a href="/login?redirect=/checkout" className="text-[#4A8DB7] font-extrabold underline">Log in here</a>.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-[#FAF9F5] border border-[#EDE8DF] rounded-xl text-xs text-[#6C7A89]">
+                      ⚡ Fast guest checkout without account registration.
+                    </div>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handleSubmitStep1} className="space-y-4">
-                {isGuest && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-widest text-bunny-text-muted">Email (for order updates)</label>
-                    <input type="email" value={guestEmail} onChange={e => { setGuestEmail(e.target.value); setErrors(prev => ({...prev, guestEmail: ""})) }} className={`${inputCls} ${errors.guestEmail ? "border-red-500" : ""}`} placeholder="you@example.com" />
+                {!userId && (
+                  <div className="space-y-1.5 pb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#1E3E5B] flex items-center justify-between">
+                      <span>{!isGuest ? "Email Address (for Account & Updates) *" : "Email Address (for Order Updates) *"}</span>
+                      <span className="text-[10px] text-[#6C7A89] font-normal">Order tracking link sent here</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={e => { setGuestEmail(e.target.value); setErrors(prev => ({...prev, guestEmail: ""})) }}
+                      className={`${inputCls} ${errors.guestEmail ? "border-red-500" : ""}`}
+                      placeholder="you@example.com"
+                    />
                     {errors.guestEmail && <p className="text-xs text-red-500">{errors.guestEmail}</p>}
                   </div>
                 )}

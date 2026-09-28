@@ -6,7 +6,8 @@ import { resolveShippingCharge } from "@/lib/shippingZone"
 import { logAudit } from "@/lib/auditLog"
 import { refreshCustomerSegments } from "@/lib/customerSegments"
 import { cookies } from "next/headers"
-import { sendOrderConfirmation, sendAdminNewOrder } from "@/lib/email"
+import { randomUUID } from "crypto"
+import { sendOrderConfirmation, sendAdminNewOrder, sendWelcomeEmail } from "@/lib/email"
 import { brevoOrderPlaced, brevoAddTags } from "@/lib/brevo"
 import { sendPurchaseEvent } from "@/lib/metaConversionsApi"
 import { sendWhatsAppMessage, buildWhatsAppOrderConfirmation } from "@/lib/whatsapp"
@@ -165,6 +166,42 @@ export async function POST(req: Request) {
 
     const serverTotal = Math.max(0, serverSubtotal + serverShippingCharge + serverTaxAmount + serverGiftWrapCharge - autoDiscountAmount - serverLoyaltyDiscount - serverCreditDiscount - serverCouponDiscount - serverGiftCardDiscount)
 
+    // Resolve customer account registration
+    let resolvedUserId = userId || null
+    let isNewUserCreated = false
+    const rawEmail = (guestEmail || "").trim().toLowerCase()
+
+    if (!isGuest && !resolvedUserId && rawEmail) {
+      let existingUser = await prisma.user.findUnique({ where: { email: rawEmail } })
+      if (!existingUser) {
+        existingUser = await prisma.user.create({
+          data: {
+            id: randomUUID(),
+            email: rawEmail,
+            name: address.name,
+            phone: address.phone,
+            role: "CUSTOMER",
+          },
+        })
+        isNewUserCreated = true
+      }
+      resolvedUserId = existingUser.id
+
+      // Save delivery address to user's profile if not existing
+      prisma.address.create({
+        data: {
+          userId: existingUser.id,
+          fullName: address.name,
+          phone: address.phone,
+          division: address.division,
+          district: address.district,
+          area: address.area,
+          address: address.fullAddress,
+          isDefault: true,
+        },
+      }).catch(() => {})
+    }
+
     const order = await prisma.$transaction(async (tx) => {
       // Re-check stock inside transaction to prevent race conditions
       for (const item of items) {
@@ -184,9 +221,9 @@ export async function POST(req: Request) {
       return tx.order.create({
         data: {
           orderNumber,
-          userId: userId || null,
-          isGuest: isGuest || false,
-          guestEmail: isGuest ? (guestEmail || null) : null,
+          userId: resolvedUserId,
+          isGuest: isGuest || (!resolvedUserId),
+          guestEmail: (!resolvedUserId) ? (rawEmail || null) : null,
           status: "PENDING",
           paymentStatus: isManualPayment ? "PENDING_VERIFICATION" : "UNPAID",
           paymentMethod,
@@ -314,8 +351,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // Send Welcome Email if a new account was registered during checkout
+    if (isNewUserCreated && rawEmail) {
+      sendWelcomeEmail({
+        to: rawEmail,
+        customerName: address.name || "there",
+        perkText: "Your Mini Bunny member account has been created! Use your 1-click magic link to set a password and track all your orders.",
+        discountCode: "WELCOME10",
+      }).catch(() => {})
+    }
+
     // Send order confirmation email (fire-and-forget)
-    const toEmail = isGuest ? guestEmail : (await prisma.user.findUnique({ where: { id: userId || "" }, select: { email: true } }))?.email
+    const toEmail = rawEmail || (isGuest ? guestEmail : (await prisma.user.findUnique({ where: { id: resolvedUserId || "" }, select: { email: true } }))?.email)
     if (toEmail) {
       sendOrderConfirmation({
         to: toEmail,

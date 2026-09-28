@@ -48,8 +48,17 @@ export default function StickyAddToCart({
     }
   }, [])
 
-  const handleClick = () => {
+  const handleClickAdd = () => {
     const btn = document.getElementById("add-to-bag-btn") as HTMLButtonElement | null
+    if (btn && !btn.disabled) {
+      btn.click()
+    } else {
+      document.getElementById("variant-selector")?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }
+
+  const handleClickBuy = () => {
+    const btn = document.getElementById("buy-now-btn") as HTMLButtonElement | null
     if (btn && !btn.disabled) {
       btn.click()
     } else {
@@ -63,25 +72,40 @@ export default function StickyAddToCart({
         visible ? "translate-y-0" : "translate-y-full"
       }`}
     >
-      <div className="bg-white border-t border-bunny-border shadow-2xl px-4 py-3 flex items-center gap-3 max-w-screen-xl mx-auto">
-        {image && (
-          <div className="relative w-11 h-13 shrink-0 overflow-hidden rounded">
-            <Image src={image} alt={productName} fill className="object-cover" sizes="44px" />
+      <div className="bg-white/95 backdrop-blur-md border-t border-[#EDE8DF] shadow-2xl px-4 py-2.5 flex items-center justify-between gap-3 max-w-screen-xl mx-auto">
+        <div className="flex items-center gap-3 min-w-0">
+          {image && (
+            <div className="relative w-10 h-12 shrink-0 overflow-hidden rounded-xl border border-[#EDE8DF] bg-[#FAF9F5]">
+              <Image src={image} alt={productName} fill className="object-cover" sizes="40px" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[#1E3E5B] truncate max-w-[140px] sm:max-w-xs">{productName}</p>
+            <p className="text-sm font-mono font-black text-[#4A8DB7]">৳{price.toLocaleString()}</p>
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-bunny-navy truncate">{productName}</p>
-          <p className="text-sm font-mono font-bold text-bunny-blue">৳{price.toLocaleString()}</p>
         </div>
-        <button
-          onClick={handleClick}
-          disabled={btnDisabled}
-          className="flex items-center gap-2 px-5 py-3 bg-bunny-navy text-white text-xs font-bold uppercase tracking-widest shrink-0 hover:bg-bunny-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          <span className="hidden sm:inline">{btnLabel}</span>
-          <span className="sm:hidden">Add</span>
-        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleClickAdd}
+            disabled={btnDisabled}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl border border-[#4A8DB7] text-[#4A8DB7] bg-[#F0F7FB] hover:bg-[#4A8DB7] hover:text-white text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Add to Bag</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleClickBuy}
+            disabled={btnDisabled}
+            className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 bg-gradient-to-r from-[#1E3E5B] to-[#2C5E8A] hover:from-[#152c41] hover:to-[#1E3E5B] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <span>Buy Now</span>
+          </button>
+        </div>
       </div>
     </div>
   )
