@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import Image from "next/image"
 import { useCartStore } from "@/store/useCartStore"
 import { useRouter } from "next/navigation"
-import { MapPin, CreditCard, ClipboardCheck, ChevronRight, Check, Gift, MessageSquare, User, Star, Wallet, Tag, Calendar, ShoppingBag, ChevronDown } from "lucide-react"
+import { MapPin, CreditCard, ClipboardCheck, ChevronRight, Check, Gift, MessageSquare, User, Star, Wallet, Tag, Calendar, ShoppingBag, ChevronDown, Sparkles } from "lucide-react"
 import { DIVISIONS, getDistricts, getAreaSuggestions } from "@/lib/bangladeshAddress"
 
 type CheckoutField = {

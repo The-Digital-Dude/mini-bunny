@@ -355,9 +355,7 @@ export async function POST(req: Request) {
     if (isNewUserCreated && rawEmail) {
       sendWelcomeEmail({
         to: rawEmail,
-        customerName: address.name || "there",
-        perkText: "Your Mini Bunny member account has been created! Use your 1-click magic link to set a password and track all your orders.",
-        discountCode: "WELCOME10",
+        name: address.name || "there",
       }).catch(() => {})
     }
 
