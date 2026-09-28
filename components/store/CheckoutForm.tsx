@@ -38,6 +38,7 @@ export default function CheckoutForm({
   storeCreditBalance = 0,
   userId,
   recoveredItems,
+  initialCoupon,
 }: {
   freeShippingThreshold?: number | null
   shippingChargeAmount?: number
@@ -57,6 +58,7 @@ export default function CheckoutForm({
   storeCreditBalance?: number
   userId?: string
   recoveredItems?: any[]
+  initialCoupon?: string
 }) {
   const { items, clearCart, addItem } = useCartStore()
   const router = useRouter()
@@ -124,10 +126,18 @@ export default function CheckoutForm({
   const [customFields, setCustomFields] = useState<Record<string, string>>({})
 
   // Coupon
-  const [couponCode, setCouponCode] = useState("")
+  const [couponCode, setCouponCode] = useState(initialCoupon || "")
   const [appliedCoupon, setAppliedCoupon] = useState<{ couponId: string; couponCode: string; discount: number; message: string } | null>(null)
   const [couponError, setCouponError] = useState("")
   const [couponLoading, setCouponLoading] = useState(false)
+
+  // Auto-apply initial coupon (e.g. from abandoned cart recovery email link)
+  useEffect(() => {
+    if (initialCoupon && items.length > 0 && !appliedCoupon) {
+      applyCouponDirectly(initialCoupon)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCoupon, items.length])
 
   // Gift card
   const [gcCode, setGcCode] = useState("")
@@ -187,21 +197,36 @@ export default function CheckoutForm({
     setGcCode("")
   }
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return
+  const applyCouponDirectly = async (code: string) => {
+    const trimmed = code.trim().toUpperCase()
+    if (!trimmed) return
     setCouponLoading(true)
     setCouponError("")
     try {
       const res = await fetch("/api/store/apply-coupon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode, items }),
+        body: JSON.stringify({ code: trimmed, items }),
       })
       const data = await res.json()
-      if (!res.ok) { setCouponError(data.error); setAppliedCoupon(null) }
-      else setAppliedCoupon(data)
-    } catch { setCouponError("Failed to apply coupon") }
-    finally { setCouponLoading(false) }
+      if (!res.ok) {
+        setCouponError(data.error)
+        setAppliedCoupon(null)
+      } else {
+        setAppliedCoupon(data)
+        setCouponCode(data.couponCode || trimmed)
+        toast.success(data.message ? `🎉 ${data.message}` : `🎉 Coupon ${data.couponCode} applied!`)
+      }
+    } catch {
+      setCouponError("Failed to apply coupon")
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+    applyCouponDirectly(couponCode)
   }
 
   const minDeliveryDate = (() => {

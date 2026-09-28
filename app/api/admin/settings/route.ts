@@ -37,6 +37,34 @@ export async function PATCH(req: Request) {
     )
 
     await Promise.all(updatePromises)
+
+    // Automatically synchronize Coupon table if recovery coupon settings were modified
+    if (settings.abandoned_cart_coupon_code) {
+      const code = String(settings.abandoned_cart_coupon_code).trim().toUpperCase()
+      const type = settings.abandoned_cart_discount_type === "FLAT" ? "FLAT" : "PERCENTAGE"
+      const value = Number(settings.abandoned_cart_discount_value || 10)
+      const minOrder = settings.abandoned_cart_min_order ? Number(settings.abandoned_cart_min_order) : null
+
+      if (code) {
+        await prisma.coupon.upsert({
+          where: { code },
+          update: {
+            type,
+            value,
+            minOrderAmount: minOrder,
+            isActive: true,
+          },
+          create: {
+            code,
+            type,
+            value,
+            minOrderAmount: minOrder,
+            isActive: true,
+          },
+        }).catch(() => {})
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

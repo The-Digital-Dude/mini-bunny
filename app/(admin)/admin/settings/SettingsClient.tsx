@@ -86,6 +86,10 @@ export function SettingsClient({
   const [isSmtpSaving, setIsSmtpSaving] = useState(false)
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [abandonedCartEmailEnabled, setAbandonedCartEmailEnabled] = useState(initialSettings["abandoned_cart_email_enabled"] === "true")
+  const [abandonedCartCouponCode, setAbandonedCartCouponCode] = useState(initialSettings["abandoned_cart_coupon_code"] || "COMEBACK10")
+  const [abandonedCartDiscountType, setAbandonedCartDiscountType] = useState(initialSettings["abandoned_cart_discount_type"] || "PERCENTAGE")
+  const [abandonedCartDiscountValue, setAbandonedCartDiscountValue] = useState(initialSettings["abandoned_cart_discount_value"] || "10")
+  const [abandonedCartMinOrder, setAbandonedCartMinOrder] = useState(initialSettings["abandoned_cart_min_order"] || "1000")
   const [isAbandonedCartSaving, setIsAbandonedCartSaving] = useState(false)
 
   // Email Studio State
@@ -248,8 +252,14 @@ export function SettingsClient({
   const handleSaveAbandonedCart = async () => {
     setIsAbandonedCartSaving(true)
     try {
-      const ok = await patch({ abandoned_cart_email_enabled: abandonedCartEmailEnabled })
-      ok ? toast.success("Abandoned cart settings saved") : toast.error("Failed to save")
+      const ok = await patch({
+        abandoned_cart_email_enabled: abandonedCartEmailEnabled,
+        abandoned_cart_coupon_code: abandonedCartCouponCode,
+        abandoned_cart_discount_type: abandonedCartDiscountType,
+        abandoned_cart_discount_value: abandonedCartDiscountValue,
+        abandoned_cart_min_order: abandonedCartMinOrder,
+      })
+      ok ? toast.success("Abandoned cart settings & recovery coupon saved") : toast.error("Failed to save")
     } catch { toast.error("Error saving") } finally { setIsAbandonedCartSaving(false) }
   }
 
@@ -661,15 +671,71 @@ export function SettingsClient({
 
             {/* Automation Rules */}
             <Card>
-              <CardHeader><CardTitle className="text-base">Automated Customer Journeys</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Automated Customer Journeys & Cart Recovery</CardTitle>
+                <CardDescription>
+                  Automatically re-engage shoppers who left items in their cart with 1h & 24h recovery emails and 1-click auto-applying discounts.
+                </CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
                 <ToggleRow
                   label="Send abandoned cart recovery emails"
-                  description="Automatically emails a customer's saved cart 1 hour and 24 hours after they leave checkout idle (24h email includes BUNNYBABY5 discount code)."
+                  description="Automatically emails saved carts 1 hour and 24 hours after checkout abandonment."
                   checked={abandonedCartEmailEnabled} onChange={setAbandonedCartEmailEnabled}
                 />
+
+                {abandonedCartEmailEnabled && (
+                  <div className="pt-2 border-t border-slate-100 space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">24-Hour Incentive Coupon Configuration</p>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Field label="Recovery Coupon Code" hint="E.g. COMEBACK10">
+                          <Input
+                            value={abandonedCartCouponCode}
+                            onChange={(e) => setAbandonedCartCouponCode(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                            placeholder="COMEBACK10"
+                            className="font-mono uppercase font-bold"
+                          />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Discount Type">
+                          <select
+                            value={abandonedCartDiscountType}
+                            onChange={(e) => setAbandonedCartDiscountType(e.target.value)}
+                            className="w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                          >
+                            <option value="PERCENTAGE">Percentage (%)</option>
+                            <option value="FLAT">Flat Amount (৳)</option>
+                          </select>
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Discount Value" hint={abandonedCartDiscountType === "PERCENTAGE" ? "E.g. 10 for 10%" : "E.g. 150 for ৳150"}>
+                          <Input
+                            type="number"
+                            value={abandonedCartDiscountValue}
+                            onChange={(e) => setAbandonedCartDiscountValue(e.target.value)}
+                            placeholder={abandonedCartDiscountType === "PERCENTAGE" ? "10" : "150"}
+                          />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Min Order Amount (৳)" hint="Optional order threshold">
+                          <Input
+                            type="number"
+                            value={abandonedCartMinOrder}
+                            onChange={(e) => setAbandonedCartMinOrder(e.target.value)}
+                            placeholder="1000"
+                          />
+                        </Field>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button onClick={handleSaveAbandonedCart} disabled={isAbandonedCartSaving}>
-                  {isAbandonedCartSaving ? "Saving…" : "Save Automation Settings"}
+                  {isAbandonedCartSaving ? "Saving…" : "Save Automation & Coupon Settings"}
                 </Button>
               </CardContent>
             </Card>

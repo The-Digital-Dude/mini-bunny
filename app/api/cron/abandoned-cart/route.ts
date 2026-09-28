@@ -62,10 +62,19 @@ export async function GET(req: Request) {
     take: 100,
   })
 
-  // Look for an auto-coupon reserved for abandoned cart recovery
-  const recoveryCoupon = await prisma.coupon.findFirst({
-    where: { code: { startsWith: "COMEBACK" }, isActive: true },
+  // Look for configured recovery coupon in settings or fallback to any active COMEBACK coupon
+  const recoveryCodeSetting = await prisma.setting.findUnique({ where: { key: "abandoned_cart_coupon_code" } }).catch(() => null)
+  const targetCode = recoveryCodeSetting?.value || "COMEBACK10"
+
+  let recoveryCoupon = await prisma.coupon.findFirst({
+    where: { code: targetCode, isActive: true },
   }).catch(() => null)
+
+  if (!recoveryCoupon) {
+    recoveryCoupon = await prisma.coupon.findFirst({
+      where: { code: { startsWith: "COMEBACK" }, isActive: true },
+    }).catch(() => null)
+  }
 
   let sent2 = 0
   for (const cart of email2Carts) {
