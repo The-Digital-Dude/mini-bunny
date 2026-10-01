@@ -120,23 +120,23 @@ export default function Navbar({
 
       {/* Main Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#EDE8DF] bg-white/95 backdrop-blur-md">
-        <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo & Mobile Menu Trigger */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
-              className="lg:hidden p-2 -ml-2 text-[#1E3E5B] hover:text-[#4A8DB7] transition-colors"
+              className="xl:hidden p-2 -ml-1.5 text-[#1E3E5B] hover:text-[#3A6D95] transition-colors shrink-0"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <Link href="/" className="inline-flex items-center">
+            <Link href="/" className="inline-flex items-center shrink-0">
               <BunnyLogo showTagline={false} />
             </Link>
           </div>
 
-          {/* Desktop Navigation Menu */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 mx-6">
+          {/* Desktop Navigation Menu (Shown on screens >= 1280px) */}
+          <nav className="hidden xl:flex items-center gap-6 2xl:gap-8 mx-4">
             <Link
               href="/"
               className="text-sm font-bold text-[#1E3E5B] hover:text-[#4A8DB7] transition-colors whitespace-nowrap"
@@ -298,12 +298,12 @@ export default function Navbar({
 
           {/* User, Child Switcher & Cart Icons */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
-            {/* Child / Baby Profile Quick Switcher (Desktop only to prevent mobile overflow) */}
-            <ChildSwitcher className="hidden lg:inline-flex" />
+            {/* Child / Baby Profile Quick Switcher (Desktop XL only) */}
+            <ChildSwitcher className="hidden xl:inline-flex" />
 
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2 sm:p-2.5 text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
+              className="p-2 sm:p-2.5 text-[#1E3E5B] hover:text-[#3A6D95] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
               aria-label="Search products"
             >
               <Search className="w-5 h-5" />
@@ -311,7 +311,7 @@ export default function Navbar({
 
             <Link
               href="/wishlist"
-              className="p-2.5 hidden lg:flex relative text-[#1E3E5B] hover:text-[#FF758F] hover:bg-pink-50/50 rounded-xl transition-colors shrink-0"
+              className="p-2.5 hidden xl:flex relative text-[#1E3E5B] hover:text-[#FF758F] hover:bg-pink-50/50 rounded-xl transition-colors shrink-0"
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
@@ -324,7 +324,7 @@ export default function Navbar({
 
             <Link
               href="/account"
-              className="p-2.5 hidden lg:flex text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
+              className="p-2.5 hidden xl:flex text-[#1E3E5B] hover:text-[#3A6D95] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
               aria-label="Parent Account & Profile"
             >
               <User className="w-5 h-5" />
@@ -343,7 +343,7 @@ export default function Navbar({
       {/* Mobile Drawer Menu */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-black/60 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-[70] bg-black/60 xl:hidden animate-in fade-in duration-200"
           onClick={() => setMobileOpen(false)}
         >
           <div

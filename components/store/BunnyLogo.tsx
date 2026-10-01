@@ -97,23 +97,23 @@ export default function BunnyLogo({
   className?: string
 }) {
   return (
-    <div className={`flex items-center gap-2.5 sm:gap-3 select-none ${className}`}>
+    <div className={`flex items-center gap-2 sm:gap-2.5 select-none shrink-0 ${className}`}>
       {/* Badge Icon */}
       <div className="relative shrink-0 transition-transform duration-300 hover:scale-105">
-        <BunnyIcon className="w-10 h-10 sm:w-11 sm:h-11 drop-shadow-sm" />
+        <BunnyIcon className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 drop-shadow-sm" />
       </div>
 
       {/* Wordmark & Tagline */}
-      <div className="flex flex-col justify-center">
+      <div className="flex flex-col justify-center shrink-0">
         <div className="flex items-center leading-none">
           {/* mini with wavy underline */}
           <div className="relative inline-flex flex-col">
-            <span className="font-heading font-extrabold text-xl sm:text-2xl text-[#F7A3B3] tracking-tight">
+            <span className="font-heading font-extrabold text-lg sm:text-xl md:text-2xl text-[#F7A3B3] tracking-tight">
               mini
             </span>
             <svg
               viewBox="0 0 36 6"
-              className="w-full h-1.5 -mt-0.5 text-[#F7A3B3]"
+              className="w-full h-1 sm:h-1.5 -mt-0.5 text-[#F7A3B3]"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -127,15 +127,15 @@ export default function BunnyLogo({
           </div>
 
           {/* bunny with heart */}
-          <div className="relative inline-flex items-center ml-1">
+          <div className="relative inline-flex items-center ml-0.5 sm:ml-1">
             <span
-              className={`font-heading font-extrabold text-xl sm:text-2xl tracking-tight ${
+              className={`font-heading font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight ${
                 inverted ? "text-white" : "text-[#3A6D95]"
               }`}
             >
               bunny
             </span>
-            <span className="text-[#F7A3B3] text-xs font-bold -mt-3.5 ml-0.5 animate-pulse">
+            <span className="text-[#F7A3B3] text-[10px] sm:text-xs font-bold -mt-3 ml-0.5 animate-pulse">
               ♥
             </span>
           </div>

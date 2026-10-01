@@ -11,12 +11,12 @@ const config: Config = {
     container: {
       center: true,
       padding: {
-        DEFAULT: "1.25rem", // 20px on mobile
-        sm: "2rem",         // 32px
-        md: "3rem",         // 48px
-        lg: "5rem",         // 80px
-        xl: "6rem",         // 96px
-        "2xl": "8rem",      // 128px
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        md: "2rem",
+        lg: "2rem",
+        xl: "2.5rem",
+        "2xl": "3rem",
       },
     },
     extend: {
