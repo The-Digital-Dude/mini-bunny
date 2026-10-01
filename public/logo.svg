@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background Badge Circle -->
+  <circle cx="250" cy="250" r="235" fill="#3A6D95" stroke="#FFFFFF" stroke-width="20" />
+
+  <!-- Bunny Left Ear -->
+  <ellipse cx="205" cy="155" rx="30" ry="70" fill="#FFF0E5" />
+  <ellipse cx="205" cy="160" rx="18" ry="52" fill="#F7A3B3" />
+
+  <!-- Bunny Right Ear -->
+  <ellipse cx="295" cy="155" rx="30" ry="70" fill="#FFF0E5" />
+  <ellipse cx="295" cy="160" rx="18" ry="52" fill="#F7A3B3" />
+
+  <!-- Bunny Head -->
+  <ellipse cx="250" cy="230" rx="65" ry="58" fill="#FFF0E5" />
+
+  <!-- Left Eye -->
+  <circle cx="218" cy="232" r="8.5" fill="#2A1B16" />
+  <circle cx="221" cy="229" r="3" fill="#FFFFFF" />
+
+  <!-- Right Eye -->
+  <circle cx="282" cy="232" r="8.5" fill="#2A1B16" />
+  <circle cx="285" cy="229" r="3" fill="#FFFFFF" />
+
+  <!-- Nose -->
+  <ellipse cx="250" cy="248" rx="7.5" ry="5.5" fill="#F7A3B3" />
+
+  <!-- W-Smile Mouth -->
+  <path
+    d="M238 254 C 242 260, 247 260, 250 256 C 253 260, 258 260, 262 254"
+    stroke="#2A1B16"
+    stroke-width="4.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- "mini" text -->
+  <text
+    x="95"
+    y="348"
+    fill="#F7A3B3"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Outfit', 'Quicksand', sans-serif"
+    font-weight="800"
+    font-size="82"
+    letter-spacing="-2"
+  >
+    mini
+  </text>
+
+  <!-- Wavy Underline under "mini" -->
+  <path
+    d="M95 372 C 120 362, 145 382, 178 368 C 198 360, 218 370, 228 365"
+    stroke="#F7A3B3"
+    stroke-width="11"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- "bunny" text -->
+  <text
+    x="238"
+    y="348"
+    fill="#FFFFFF"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Outfit', 'Quicksand', sans-serif"
+    font-weight="800"
+    font-size="82"
+    letter-spacing="-2"
+  >
+    bunny
+  </text>
+
+  <!-- Tiny Pink Heart above the 'y' -->
+  <g transform="translate(425, 310) rotate(15) scale(1.6)">
+    <path
+      d="M0 0 C 0 -4, 5 -7, 9 -3 C 13 -7, 18 -4, 18 0 C 18 6, 9 12, 9 12 C 9 12, 0 6, 0 0 Z"
+      fill="#F7A3B3"
+    />
+  </g>
+</svg>

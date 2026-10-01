@@ -57,7 +57,7 @@ export default async function StoreLayout({
 
   const branding = {
     storeName: settingsMap.store_name || "Mini Bunny",
-    storeTagline: settingsMap.store_tagline || "Made with Love for Little Ones",
+    storeTagline: settingsMap.store_tagline || "Quality is our main priority",
     storeDescription:
       settingsMap.store_description ||
       "Premium baby and kids clothing store. Soft, organic, infant-safe fabrics made with love for your little ones.",

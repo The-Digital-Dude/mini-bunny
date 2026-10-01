@@ -109,7 +109,7 @@ export default function ChildSwitcher({ className = "" }: { className?: string }
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-80 p-0 rounded-3xl border border-[#EDE8DF] bg-white shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] p-0 rounded-3xl border border-[#EDE8DF] bg-white shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="p-4 bg-gradient-to-r from-[#FAF9F5] to-[#FFF0F3] border-b border-[#EDE8DF]">
               <div className="flex items-center justify-between">

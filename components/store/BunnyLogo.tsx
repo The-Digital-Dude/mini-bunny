@@ -1,63 +1,87 @@
 import React from "react"
 
-export function BunnyIcon({ className = "w-9 h-9" }: { className?: string }) {
+export function BunnyIcon({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 48 48"
+      viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
     >
-      {/* Background Soft Circle */}
-      <circle cx="24" cy="24" r="22" fill="#EBF5FB" />
-      
-      {/* Left Ear */}
-      <path
-        d="M16 8C16 4.68629 18.6863 2 22 2C22 2 22 14 20 18C18 22 16 19 16 8Z"
-        fill="#4A8DB7"
-      />
-      <path
-        d="M17.5 8C17.5 5.5 19.5 4 20.5 4C20.5 4 20.5 12 19 15C17.5 18 17.5 15 17.5 8Z"
-        fill="#FFCCD5"
-      />
+      {/* Outer Circle Background */}
+      <circle cx="50" cy="50" r="48" fill="#3A6D95" stroke="#FFFFFF" strokeWidth="4" />
 
-      {/* Right Ear */}
+      {/* Bunny Left Ear */}
+      <ellipse cx="40" cy="30" rx="6.5" ry="15" fill="#FFF0E5" />
+      <ellipse cx="40" cy="31" rx="3.8" ry="11" fill="#F7A3B3" />
+
+      {/* Bunny Right Ear */}
+      <ellipse cx="60" cy="30" rx="6.5" ry="15" fill="#FFF0E5" />
+      <ellipse cx="60" cy="31" rx="3.8" ry="11" fill="#F7A3B3" />
+
+      {/* Bunny Head */}
+      <ellipse cx="50" cy="46" rx="14" ry="12" fill="#FFF0E5" />
+
+      {/* Left Eye */}
+      <circle cx="43" cy="46" r="1.8" fill="#2A1B16" />
+      <circle cx="43.6" cy="45.3" r="0.6" fill="#FFFFFF" />
+
+      {/* Right Eye */}
+      <circle cx="57" cy="46" r="1.8" fill="#2A1B16" />
+      <circle cx="57.6" cy="45.3" r="0.6" fill="#FFFFFF" />
+
+      {/* Nose */}
+      <ellipse cx="50" cy="49.5" rx="1.6" ry="1.2" fill="#F7A3B3" />
+
+      {/* W-Smile Mouth */}
       <path
-        d="M32 8C32 4.68629 29.3137 2 26 2C26 2 26 14 28 18C30 22 32 19 32 8Z"
-        fill="#4A8DB7"
-      />
-      <path
-        d="M30.5 8C30.5 5.5 28.5 4 27.5 4C27.5 4 27.5 12 29 15C30.5 18 30.5 15 30.5 8Z"
-        fill="#FFCCD5"
-      />
-
-      {/* Head */}
-      <ellipse cx="24" cy="28" rx="15" ry="13" fill="#FFFFFF" stroke="#4A8DB7" strokeWidth="2.5" />
-
-      {/* Eyes */}
-      <circle cx="19" cy="26" r="2" fill="#1E3E5B" />
-      <circle cx="19.7" cy="25.3" r="0.7" fill="#FFFFFF" />
-      
-      <circle cx="29" cy="26" r="2" fill="#1E3E5B" />
-      <circle cx="29.7" cy="25.3" r="0.7" fill="#FFFFFF" />
-
-      {/* Blush Cheeks */}
-      <ellipse cx="15.5" cy="30" rx="2.5" ry="1.5" fill="#FFCCD5" />
-      <ellipse cx="32.5" cy="30" rx="2.5" ry="1.5" fill="#FFCCD5" />
-
-      {/* Nose (Heart/Triangle) */}
-      <path
-        d="M24 29.5L22.5 28C22.5 28 23 27 24 27C25 27 25.5 28 25.5 28L24 29.5Z"
-        fill="#FF758F"
-      />
-
-      {/* Mouth */}
-      <path
-        d="M21.5 31C22.5 32.2 23.5 32.2 24 31C24.5 32.2 25.5 32.2 26.5 31"
-        stroke="#4A8DB7"
-        strokeWidth="1.5"
+        d="M47.5 50.8C48.3 52 49.3 52 50 51.2C50.7 52 51.7 52 52.5 50.8"
+        stroke="#2A1B16"
+        strokeWidth="0.9"
         strokeLinecap="round"
+      />
+
+      {/* "mini" text */}
+      <text
+        x="18"
+        y="70"
+        fill="#F7A3B3"
+        fontFamily="var(--font-heading), 'Outfit', 'Quicksand', sans-serif"
+        fontWeight="800"
+        fontSize="17"
+        letterSpacing="-0.5"
+      >
+        mini
+      </text>
+
+      {/* Wavy Underline under "mini" */}
+      <path
+        d="M18 74.5 C 23 72.5, 27 76.5, 34 73.5 C 38 72, 42 74, 44 73"
+        stroke="#F7A3B3"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* "bunny" text */}
+      <text
+        x="47"
+        y="70"
+        fill="#FFFFFF"
+        fontFamily="var(--font-heading), 'Outfit', 'Quicksand', sans-serif"
+        fontWeight="800"
+        fontSize="17"
+        letterSpacing="-0.5"
+      >
+        bunny
+      </text>
+
+      {/* Tiny Pink Heart above the 'y' */}
+      <path
+        d="M84.5 62 C84.5 60.8 85.8 59.8 87 61 C88.2 59.8 89.5 60.8 89.5 62 C89.5 63.3 87 65.2 87 65.2 C87 65.2 84.5 63.3 84.5 62 Z"
+        fill="#F7A3B3"
+        transform="rotate(15 87 63)"
       />
     </svg>
   )
@@ -73,28 +97,57 @@ export default function BunnyLogo({
   className?: string
 }) {
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
+    <div className={`flex items-center gap-2.5 sm:gap-3 select-none ${className}`}>
+      {/* Badge Icon */}
       <div className="relative shrink-0 transition-transform duration-300 hover:scale-105">
-        <BunnyIcon className="w-10 h-10 md:w-11 md:h-11 drop-shadow-sm" />
+        <BunnyIcon className="w-10 h-10 sm:w-11 sm:h-11 drop-shadow-sm" />
       </div>
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1 leading-none">
-          <span
-            className={`font-heading font-extrabold text-xl md:text-2xl tracking-tight ${
-              inverted ? "text-white" : "text-[#1E3E5B]"
-            }`}
-          >
-            Mini<span className="text-[#4A8DB7]">Bunny</span>
-          </span>
-          <span className="inline-block w-2 h-2 rounded-full bg-[#FF758F] -mt-2" />
+
+      {/* Wordmark & Tagline */}
+      <div className="flex flex-col justify-center">
+        <div className="flex items-center leading-none">
+          {/* mini with wavy underline */}
+          <div className="relative inline-flex flex-col">
+            <span className="font-heading font-extrabold text-xl sm:text-2xl text-[#F7A3B3] tracking-tight">
+              mini
+            </span>
+            <svg
+              viewBox="0 0 36 6"
+              className="w-full h-1.5 -mt-0.5 text-[#F7A3B3]"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1 3.5 C 8 0.5, 14 6, 22 2 C 28 -0.5, 32 3, 35 2"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          {/* bunny with heart */}
+          <div className="relative inline-flex items-center ml-1">
+            <span
+              className={`font-heading font-extrabold text-xl sm:text-2xl tracking-tight ${
+                inverted ? "text-white" : "text-[#3A6D95]"
+              }`}
+            >
+              bunny
+            </span>
+            <span className="text-[#F7A3B3] text-xs font-bold -mt-3.5 ml-0.5 animate-pulse">
+              ♥
+            </span>
+          </div>
         </div>
+
         {showTagline && (
           <span
-            className={`text-[9px] font-semibold tracking-widest uppercase mt-0.5 ${
-              inverted ? "text-white/70" : "text-[#6C7A89]"
+            className={`text-[9px] sm:text-[10px] font-semibold tracking-wide mt-0.5 ${
+              inverted ? "text-white/80" : "text-[#6C7A89]"
             }`}
           >
-            Baby & Kids Boutique
+            Quality is our main priority
           </span>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Search, Heart, User, Menu, X, Zap, ChevronDown, Sparkles, Gift, Baby, Package, Flame } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useCartStore } from "@/store/useCartStore"
@@ -58,7 +59,7 @@ function useCountdown(endsAt: string) {
 export default function Navbar({
   freeShippingThreshold = null,
   storeName = "Mini Bunny",
-  storeTagline = "Made with Love for Little Ones",
+  storeTagline = "Quality is our main priority",
   categories = [],
   activeFlashSale = null,
 }: {
@@ -68,10 +69,16 @@ export default function Navbar({
   categories?: NavCategory[]
   activeFlashSale?: NavFlashSale | null
 }) {
+  const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [catDropdownOpen, setCatDropdownOpen] = useState(false)
   const [ageDropdownOpen, setAgeDropdownOpen] = useState(false)
+
+  // Automatically close mobile menu when navigating to a new page
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
 
   const itemCount = useCartStore((s) => s.items.reduce((acc, i) => acc + i.quantity, 0))
   const wishlistCount = useWishlistStore((s) => s.items.length)
@@ -290,13 +297,13 @@ export default function Navbar({
           </nav>
 
           {/* User, Child Switcher & Cart Icons */}
-          <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
-            {/* Child / Baby Profile Quick Switcher */}
-            <ChildSwitcher className="hidden sm:inline-flex" />
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+            {/* Child / Baby Profile Quick Switcher (Desktop only to prevent mobile overflow) */}
+            <ChildSwitcher className="hidden lg:inline-flex" />
 
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2.5 text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors"
+              className="p-2 sm:p-2.5 text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
               aria-label="Search products"
             >
               <Search className="w-5 h-5" />
@@ -304,7 +311,7 @@ export default function Navbar({
 
             <Link
               href="/wishlist"
-              className="p-2.5 hidden sm:flex relative text-[#1E3E5B] hover:text-[#FF758F] hover:bg-pink-50/50 rounded-xl transition-colors"
+              className="p-2.5 hidden lg:flex relative text-[#1E3E5B] hover:text-[#FF758F] hover:bg-pink-50/50 rounded-xl transition-colors shrink-0"
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
@@ -317,13 +324,15 @@ export default function Navbar({
 
             <Link
               href="/account"
-              className="p-2.5 hidden sm:flex text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors"
+              className="p-2.5 hidden lg:flex text-[#1E3E5B] hover:text-[#4A8DB7] hover:bg-gray-50 rounded-xl transition-colors shrink-0"
               aria-label="Parent Account & Profile"
             >
               <User className="w-5 h-5" />
             </Link>
 
-            <CartDrawer itemCount={itemCount} freeShippingThreshold={freeShippingThreshold} />
+            <div className="shrink-0">
+              <CartDrawer itemCount={itemCount} freeShippingThreshold={freeShippingThreshold} />
+            </div>
           </div>
         </div>
       </header>
@@ -333,13 +342,19 @@ export default function Navbar({
 
       {/* Mobile Drawer Menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)}>
+        <div
+          className="fixed inset-0 z-[70] bg-black/60 lg:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileOpen(false)}
+        >
           <div
-            className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white p-6 flex flex-col gap-6 overflow-y-auto"
+            className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white p-6 flex flex-col gap-6 overflow-y-auto overscroll-contain animate-in slide-in-from-left duration-200"
+            style={{ paddingBottom: "max(7rem, calc(env(safe-area-inset-bottom, 0px) + 6rem))" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[#EDE8DF] pb-4">
-              <BunnyLogo showTagline={false} />
+              <Link href="/" onClick={() => setMobileOpen(false)} className="inline-flex items-center">
+                <BunnyLogo showTagline={false} />
+              </Link>
               <button
                 onClick={() => setMobileOpen(false)}
                 className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
