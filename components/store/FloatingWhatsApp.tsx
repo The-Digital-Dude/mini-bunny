@@ -17,10 +17,10 @@ export default function FloatingWhatsApp() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 print:hidden">
+    <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-3 print:hidden">
       {/* Popover Bubble */}
       {isOpen && (
-        <div className="w-84 max-w-[92vw] bg-white rounded-3xl border border-[#EDE8DF] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="w-84 max-w-[92vw] max-h-[calc(100vh-9rem)] bg-white rounded-3xl border border-[#EDE8DF] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#25D366] to-[#128C7E] p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -45,7 +45,7 @@ export default function FloatingWhatsApp() {
           </div>
 
           {/* Body */}
-          <div className="p-4 space-y-3 bg-[#FAF9F5]/70 text-xs">
+          <div className="p-4 space-y-3 bg-[#FAF9F5]/70 text-xs overflow-y-auto">
             <div className="p-3 bg-white rounded-2xl border border-[#EDE8DF] shadow-xs text-[#1E3E5B] space-y-1">
               <p className="font-bold flex items-center gap-1">
                 <span>Assalamu Alaikum!</span>
