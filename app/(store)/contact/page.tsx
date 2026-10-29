@@ -6,7 +6,7 @@ import ContactForm from "./ContactForm"
 export default async function ContactPage() {
   const [{ title, content }, settings] = await Promise.all([
     renderContentPage("contact", "Contact Us"),
-    prisma.setting.findMany({ where: { key: { in: ["support_email", "support_phone"] } } }),
+    prisma.setting.findMany({ where: { key: { in: ["support_email", "support_phone"] } } }).catch(() => []),
   ])
 
   const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value]))

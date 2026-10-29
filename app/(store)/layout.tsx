@@ -32,7 +32,7 @@ export default async function StoreLayout({
 }) {
   const now = new Date()
   const [settings, categories, sitewideSale] = await Promise.all([
-    prisma.setting.findMany({ where: { key: { in: SETTING_KEYS } } }),
+    prisma.setting.findMany({ where: { key: { in: SETTING_KEYS } } }).catch(() => []),
     prisma.category.findMany({
       where: { isActive: true, showOnNavbar: true, parentId: null },
       orderBy: { sortOrder: "asc" },
@@ -44,11 +44,11 @@ export default async function StoreLayout({
           select: { id: true, name: true, slug: true }
         }
       },
-    }),
+    }).catch(() => []),
     prisma.flashSale.findFirst({
       where: { scope: "SITEWIDE", isActive: true, startsAt: { lte: now }, endsAt: { gte: now } },
       orderBy: { createdAt: "desc" },
-    }),
+    }).catch(() => null),
   ])
 
   const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value]))
