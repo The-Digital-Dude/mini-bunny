@@ -1,3 +1,4 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Image from "next/image"
@@ -5,22 +6,37 @@ import ProductCard from "@/components/store/ProductCard"
 import { serialize } from "@/lib/utils"
 import type { Metadata } from "next"
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const post = await prisma.blogPost.findUnique({ where: { slug, isPublished: true } }).catch(() => null)
-  if (!post) return { title: "Not Found" }
-  return { title: post.title, description: post.excerpt || "", openGraph: { images: post.coverImage ? [post.coverImage] : [] } }
-}
+export const revalidate = 300 // ISR: revalidate blog post every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new posts
 
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const post = await prisma.blogPost.findUnique({
+const getPost = cache(async (slug: string) => {
+  return prisma.blogPost.findUnique({
     where: { slug, isPublished: true },
     include: {
       category: true,
       products: { include: { product: { include: { images: true, variants: true, category: true } } } },
     },
   }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const posts = await prisma.blogPost.findMany({
+    where: { isPublished: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return posts.map((p) => ({ slug: p.slug }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const post = await getPost(slug)
+  if (!post) return { title: "Not Found" }
+  return { title: post.title, description: post.excerpt || "", openGraph: { images: post.coverImage ? [post.coverImage] : [] } }
+}
+
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = await getPost(slug)
 
   if (!post) notFound()
 

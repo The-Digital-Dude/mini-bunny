@@ -1,12 +1,28 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.minibunny.com"
 
+export const revalidate = 300 // ISR: revalidate custom pages every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new pages
+
+const getPage = cache(async (slug: string) => {
+  return prisma.page.findUnique({ where: { slug, isPublished: true } }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const pages = await prisma.page.findMany({
+    where: { isPublished: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return pages.map((p) => ({ slug: p.slug }))
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const page = await prisma.page.findUnique({ where: { slug, isPublished: true } }).catch(() => null)
+  const page = await getPage(slug)
   if (!page) return {}
   return {
     title: page.title,
@@ -16,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CmsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const page = await prisma.page.findUnique({ where: { slug, isPublished: true } }).catch(() => null)
+  const page = await getPage(slug)
   if (!page) notFound()
 
   return (

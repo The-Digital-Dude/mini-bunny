@@ -17,6 +17,8 @@ import {
   Baby,
 } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
+import CancelOrderButton from "@/components/store/CancelOrderButton"
 import AddressList from "@/components/store/account/AddressList"
 import ParentProfileCard from "@/components/store/ParentProfileCard"
 import SmartRecommendations from "@/components/store/SmartRecommendations"
@@ -143,7 +145,7 @@ export default function AccountPage() {
   const firstName = user?.name?.split(" ")[0] || "Parent"
 
   return (
-    <div className="container mx-auto px-4 py-12 md:py-16 max-w-6xl animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-12 md:py-16 max-w-6xl">
       
       {/* Header */}
       <div className="mb-10 flex items-center justify-between">
@@ -333,6 +335,28 @@ export default function AccountPage() {
                         </div>
                       </div>
                     ))}
+                    <div className="bg-[#FAF9F5]/70 px-6 py-3 border-t border-[#EDE8DF] flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <Link
+                        href={`/order/${order.id}`}
+                        className="font-bold text-[#4A8DB7] hover:underline"
+                      >
+                        View Order Details &rarr;
+                      </Link>
+                      {(order.status === "PENDING" || order.status === "CONFIRMED") && (
+                        <CancelOrderButton
+                          orderId={order.id}
+                          orderNumber={order.orderNumber}
+                          shippingPhone={order.shippingPhone}
+                          onCancelled={() => {
+                            setOrdersLoading(true)
+                            fetch("/api/account/orders")
+                              .then((r) => r.json())
+                              .then((d) => setOrders(d.orders || []))
+                              .finally(() => setOrdersLoading(false))
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                 ))
               )}

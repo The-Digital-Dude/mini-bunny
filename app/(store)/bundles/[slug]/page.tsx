@@ -1,7 +1,38 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import BundleDetail from "./BundleDetail"
+
+export const revalidate = 300 // ISR: revalidate bundle page every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new bundles
+
+const getBundle = cache(async (slug: string) => {
+  return prisma.bundle.findFirst({
+    where: { slug, isActive: true },
+    include: {
+      items: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          product: {
+            include: {
+              images: { orderBy: { sortOrder: "asc" } },
+              variants: true,
+            },
+          },
+        },
+      },
+    },
+  }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const bundles = await prisma.bundle.findMany({
+    where: { isActive: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return bundles.map((b) => ({ slug: b.slug }))
+}
 
 export async function generateMetadata({
   params,
@@ -10,9 +41,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   if (!slug) return {}
-  const bundle = await prisma.bundle.findFirst({
-    where: { slug, isActive: true },
-  })
+  const bundle = await getBundle(slug)
   if (!bundle) return {}
   return {
     title: `${bundle.name} — Mini Bunny`,
@@ -28,22 +57,7 @@ export default async function BundleDetailPage({
   const { slug } = await params
   if (!slug) notFound()
 
-  const bundle = await prisma.bundle.findFirst({
-    where: { slug, isActive: true },
-    include: {
-      items: {
-        orderBy: { sortOrder: "asc" },
-        include: {
-          product: {
-            include: {
-              images: { orderBy: { sortOrder: "asc" } },
-              variants: true,
-            },
-          },
-        },
-      },
-    },
-  })
+  const bundle = await getBundle(slug)
 
   if (!bundle) notFound()
 

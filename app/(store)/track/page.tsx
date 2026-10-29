@@ -49,7 +49,7 @@ export default function TrackOrderPage() {
   const currentIdx = order ? STATUS_STEPS.indexOf(order.status) : -1
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl">
       <div className="text-center mb-12">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-bunny-blue/10 mb-6">
           <Truck className="w-8 h-8 text-bunny-blue" />

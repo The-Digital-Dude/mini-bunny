@@ -372,6 +372,7 @@ export default function Navbar({
             <nav className="flex flex-col gap-4 text-sm font-semibold">
               <Link
                 href="/"
+                prefetch={false}
                 onClick={() => setMobileOpen(false)}
                 className="text-[#1E3E5B] hover:text-[#4A8DB7] py-1.5"
               >
@@ -379,6 +380,7 @@ export default function Navbar({
               </Link>
               <Link
                 href="/shop"
+                prefetch={false}
                 onClick={() => setMobileOpen(false)}
                 className="text-[#1E3E5B] hover:text-[#4A8DB7] py-1.5"
               >
@@ -394,6 +396,7 @@ export default function Navbar({
                   <div key={cat.id} className="space-y-1">
                     <Link
                       href={`/shop?category=${cat.slug}`}
+                      prefetch={false}
                       onClick={() => setMobileOpen(false)}
                       className="text-[#1E3E5B] hover:text-[#4A8DB7] block font-bold py-1"
                     >
@@ -405,6 +408,7 @@ export default function Navbar({
                           <Link
                             key={sub.id}
                             href={`/shop?category=${sub.slug}`}
+                            prefetch={false}
                             onClick={() => setMobileOpen(false)}
                             className="text-xs text-[#6C7A89] hover:text-[#4A8DB7] block py-0.5"
                           >
@@ -427,6 +431,7 @@ export default function Navbar({
                     <Link
                       key={age.slug}
                       href={`/shop?age=${age.slug}`}
+                      prefetch={false}
                       onClick={() => setMobileOpen(false)}
                       className="text-xs text-[#1E3E5B] bg-[#FAF9F5] p-2 rounded-xl text-center hover:bg-[#EBF5FB] font-medium"
                     >
@@ -440,6 +445,7 @@ export default function Navbar({
               <div className="space-y-2 pt-3 border-t border-[#EDE8DF]">
                 <Link
                   href="/bundles"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="text-[#1E3E5B] hover:text-[#4A8DB7] flex items-center justify-between py-1"
                 >
@@ -448,6 +454,7 @@ export default function Navbar({
                 </Link>
                 <Link
                   href="/gifts"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="text-[#1E3E5B] hover:text-[#FF758F] flex items-center justify-between py-1"
                 >
@@ -461,6 +468,7 @@ export default function Navbar({
                 </Link>
                 <Link
                   href="/shop?sale=true"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="text-[#FF758F] font-bold flex items-center justify-between py-1"
                 >
@@ -469,6 +477,7 @@ export default function Navbar({
                 </Link>
                 <Link
                   href="/account"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="text-[#1E3E5B] hover:text-[#4A8DB7] flex items-center justify-between py-1"
                 >

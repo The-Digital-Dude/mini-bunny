@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ReturnsPage() {
   return (
-    <div className="animate-in fade-in duration-500">
+    <div>
       {/* Hero */}
       <div className="bg-stone-900 text-white py-20 px-4 text-center">
         <p className="text-amber-300 font-bold tracking-[0.2em] text-xs uppercase mb-4">Customer Care</p>

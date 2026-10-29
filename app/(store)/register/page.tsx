@@ -126,7 +126,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex flex-col md:flex-row-reverse animate-in fade-in duration-500">
+    <div className="min-h-[80vh] flex flex-col md:flex-row-reverse">
       {/* Form Side */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-10 lg:p-16 bg-[#FAF9F5]">
         <div className="w-full max-w-md space-y-6">

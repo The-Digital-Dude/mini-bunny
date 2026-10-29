@@ -68,7 +68,7 @@ export default async function CheckoutPage({
   const serialisedFields = JSON.parse(JSON.stringify(checkoutFields))
 
   return (
-    <div className="bg-bunny-bg min-h-screen pt-8 pb-24 animate-in fade-in duration-500">
+    <div className="bg-bunny-bg min-h-screen pt-8 pb-24">
       <TrackCheckoutStart />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 

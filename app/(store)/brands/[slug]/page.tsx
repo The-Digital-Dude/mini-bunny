@@ -1,11 +1,15 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import type { Metadata } from "next"
 
-export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const brand = await prisma.brand.findUnique({
+export const revalidate = 300 // ISR: revalidate brand page every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new brands
+
+const getBrand = cache(async (slug: string) => {
+  return prisma.brand.findUnique({
     where: { slug, isActive: true },
     include: {
       products: {
@@ -15,7 +19,30 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         take: 60,
       },
     },
-  })
+  }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const brands = await prisma.brand.findMany({
+    where: { isActive: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return brands.map((b) => ({ slug: b.slug }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const brand = await getBrand(slug)
+  if (!brand) return { title: "Brand Not Found" }
+  return {
+    title: `${brand.name} — Mini Bunny`,
+    description: brand.description || `Browse products from ${brand.name} at Mini Bunny.`,
+  }
+}
+
+export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const brand = await getBrand(slug)
   if (!brand) notFound()
 
   return (
@@ -49,7 +76,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {brand.products.map(product => (
-          <Link key={product.id} href={`/products/${product.slug}`} className="group">
+          <Link key={product.id} href={`/shop/${product.slug}`} className="group">
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
               {product.images[0] ? (
                 <Image

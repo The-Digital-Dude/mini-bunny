@@ -42,7 +42,7 @@ const looks = [
 
 export default function LookbookPage() {
   return (
-    <div className="animate-in fade-in duration-500">
+    <div>
       {/* Hero */}
       <div className="relative h-[60vh] flex items-end overflow-hidden bg-stone-900">
         <img

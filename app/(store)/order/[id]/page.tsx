@@ -10,6 +10,7 @@ import { getBalance } from "@/lib/loyalty"
 import OrderMessages from "@/components/store/OrderMessages"
 import PostPurchaseUpsell from "@/components/store/PostPurchaseUpsell"
 import PurchaseTracker from "@/components/store/PurchaseTracker"
+import CancelOrderButton from "@/components/store/CancelOrderButton"
 
 const STATUS_STEPS = ["PENDING", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED"] as const
 
@@ -64,7 +65,7 @@ export default async function OrderConfirmationPage({
   }
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-5xl animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-16 md:py-24 max-w-5xl">
       <div className="text-center mb-16">
         {payment === "failed" ? (
           <>
@@ -106,7 +107,16 @@ export default async function OrderConfirmationPage({
             </section>
           ) : (
             <section className="bg-white border border-bunny-border rounded-2xl p-6 md:p-8">
-              <h2 className="text-xl font-heading font-bold mb-8">Order Status</h2>
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <h2 className="text-xl font-heading font-bold">Order Status</h2>
+                {(order.status === "PENDING" || order.status === "CONFIRMED") && (
+                  <CancelOrderButton
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    shippingPhone={order.shippingPhone}
+                  />
+                )}
+              </div>
               <div className="flex items-start justify-between relative">
                 <div className="absolute top-5 left-0 right-0 h-0.5 bg-bunny-border" />
                 {STATUS_STEPS.map((step, idx) => {
@@ -274,7 +284,14 @@ export default async function OrderConfirmationPage({
       {payment !== "failed" && <PostPurchaseUpsell orderId={order.id} />}
       <PurchaseTracker order={serialize(order) as any} />
 
-      <div className="mt-16 text-center border-t border-bunny-border pt-12 flex items-center justify-center gap-8">
+      <div className="mt-16 text-center border-t border-bunny-border pt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+        {(order.status === "PENDING" || order.status === "CONFIRMED") && (
+          <CancelOrderButton
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            shippingPhone={order.shippingPhone}
+          />
+        )}
         <Link href={`/order/${order.id}/invoice`} className="inline-block text-xs font-bold uppercase tracking-widest border-b border-bunny-navy pb-1 hover:text-bunny-blue hover:border-bunny-blue transition-colors">
           Download Invoice
         </Link>

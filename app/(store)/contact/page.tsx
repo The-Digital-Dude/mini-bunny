@@ -14,7 +14,7 @@ export default async function ContactPage() {
   const supportPhone = settingsMap.support_phone || "+880 1700 000000"
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl">
       <h1 className="text-4xl md:text-5xl font-heading font-bold text-bunny-navy mb-10">{title}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">

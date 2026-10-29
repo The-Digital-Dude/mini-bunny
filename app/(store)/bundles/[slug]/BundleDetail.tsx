@@ -84,7 +84,7 @@ export default function BundleDetail({ bundle }: { bundle: Bundle }) {
   const firstImage = bundle.image ?? bundle.items[0]?.product.images[0]?.url
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16">
       <div className="mb-6">
         <Link
           href="/bundles"

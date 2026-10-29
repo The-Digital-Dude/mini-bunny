@@ -71,7 +71,7 @@ export default async function GiftsPage() {
   ]
 
   return (
-    <div className="w-full bg-[#FAF9F5] pb-24 animate-in fade-in duration-500">
+    <div className="w-full bg-[#FAF9F5] pb-24">
       
       {/* Hero */}
       <section className="relative bg-gradient-to-b from-[#FFF0F3]/80 via-[#FFF9F0]/60 to-[#FAF9F5] py-20 px-4 text-center overflow-hidden border-b border-[#EDE8DF]">

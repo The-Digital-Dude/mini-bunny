@@ -83,7 +83,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-24 md:py-32 flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+      <div className="container mx-auto px-4 py-24 md:py-32 flex flex-col items-center justify-center text-center">
         <div className="w-24 h-24 rounded-full bg-bunny-muted flex items-center justify-center text-bunny-border mb-8">
           <ShoppingBag className="w-10 h-10" />
         </div>
@@ -101,7 +101,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 md:py-16 animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-12 md:py-16">
       <h1 className="text-4xl md:text-5xl font-heading font-bold text-bunny-navy mb-2">Your Bag</h1>
       <p className="text-sm text-bunny-text-muted mb-8 uppercase tracking-widest font-medium">{items.length} Items</p>
 

@@ -1,19 +1,15 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import BundleAddToCart from "./BundleAddToCart"
 import type { Metadata } from "next"
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const bundle = await prisma.bundle.findUnique({ where: { slug, isActive: true } }).catch(() => null)
-  if (!bundle) return { title: "Bundle Not Found" }
-  return { title: `${bundle.name} Bundle`, description: bundle.description || "" }
-}
+export const revalidate = 300 // ISR: revalidate bundle page every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new bundles
 
-export default async function BundlePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const bundle = await prisma.bundle.findUnique({
+const getBundle = cache(async (slug: string) => {
+  return prisma.bundle.findUnique({
     where: { slug, isActive: true },
     include: {
       items: {
@@ -30,6 +26,26 @@ export default async function BundlePage({ params }: { params: Promise<{ slug: s
       },
     },
   }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const bundles = await prisma.bundle.findMany({
+    where: { isActive: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return bundles.map((b) => ({ slug: b.slug }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const bundle = await getBundle(slug)
+  if (!bundle) return { title: "Bundle Not Found" }
+  return { title: `${bundle.name} Bundle`, description: bundle.description || "" }
+}
+
+export default async function BundlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const bundle = await getBundle(slug)
 
   if (!bundle) notFound()
 

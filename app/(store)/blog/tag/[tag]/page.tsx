@@ -3,13 +3,18 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 
-export async function generateMetadata({ params }: { params: { tag: string } }) {
-  const tag = decodeURIComponent(params.tag)
+export const revalidate = 300 // ISR: revalidate tagged blog page every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new tags
+
+export async function generateMetadata({ params }: { params: Promise<{ tag: string }> }) {
+  const { tag: rawTag } = await params
+  const tag = decodeURIComponent(rawTag)
   return { title: `#${tag} — Blog`, description: `Posts tagged with ${tag}` }
 }
 
-export default async function BlogTagPage({ params }: { params: { tag: string } }) {
-  const tag = decodeURIComponent(params.tag)
+export default async function BlogTagPage({ params }: { params: Promise<{ tag: string }> }) {
+  const { tag: rawTag } = await params
+  const tag = decodeURIComponent(rawTag)
 
   const posts = await prisma.blogPost.findMany({
     where: {

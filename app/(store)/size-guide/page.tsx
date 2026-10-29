@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SizeGuidePage() {
   return (
-    <div className="animate-in fade-in duration-500 pb-20 bg-[#FAF9F5]">
+    <div className="pb-20 bg-[#FAF9F5]">
       {/* Hero */}
       <div className="bg-[#1E3E5B] text-white py-16 md:py-20 px-4 text-center relative overflow-hidden">
         <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-[#4A8DB7]/20 blur-2xl" />

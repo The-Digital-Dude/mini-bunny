@@ -86,7 +86,7 @@ export default function FaqPage() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       {/* Hero */}
       <div className="bg-stone-900 text-white py-20 px-4 text-center">

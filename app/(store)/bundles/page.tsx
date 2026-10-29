@@ -67,7 +67,7 @@ export default async function BundlesPage() {
   const displayBundles = bundles.length > 0 ? bundles : signatureBabyBundles
 
   return (
-    <div className="w-full bg-[#FAF9F5] pb-24 animate-in fade-in duration-500">
+    <div className="w-full bg-[#FAF9F5] pb-24">
       
       {/* Header */}
       <section className="relative bg-gradient-to-b from-[#EBF5FB]/80 via-[#FFF0F3]/40 to-[#FAF9F5] py-20 px-4 text-center overflow-hidden border-b border-[#EDE8DF]">

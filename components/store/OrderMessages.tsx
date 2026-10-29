@@ -17,7 +17,7 @@ export default function OrderMessages({ orderId, isAdmin = false }: { orderId: s
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState("")
   const [sending, setSending] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const apiBase = isAdmin ? `/api/admin/orders/${orderId}/messages` : `/api/orders/${orderId}/messages`
 
@@ -29,7 +29,9 @@ export default function OrderMessages({ orderId, isAdmin = false }: { orderId: s
   }, [apiBase])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }, [messages])
 
   async function send() {
@@ -50,7 +52,7 @@ export default function OrderMessages({ orderId, isAdmin = false }: { orderId: s
 
   return (
     <div className="border rounded-lg flex flex-col h-72">
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 && (
           <p className="text-center text-muted-foreground text-xs py-8">No messages yet</p>
         )}
@@ -75,7 +77,6 @@ export default function OrderMessages({ orderId, isAdmin = false }: { orderId: s
             </div>
           )
         })}
-        <div ref={bottomRef} />
       </div>
 
       <div className="border-t p-2 flex gap-2">

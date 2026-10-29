@@ -68,14 +68,14 @@ export default function Footer({
           <div className="space-y-4">
             <h4 className="font-bold uppercase tracking-wider text-sm">Shop</h4>
             <ul className="space-y-2 text-sm text-bunny-text-muted">
-              <li><Link href="/shop" className="hover:text-bunny-blue transition-colors">All Products</Link></li>
+              <li><Link href="/shop" prefetch={false} className="hover:text-bunny-blue transition-colors">All Products</Link></li>
               {shopCategories.map((cat) => (
                 <li key={cat.id}>
-                  <Link href={`/shop?category=${cat.slug}`} className="hover:text-bunny-blue transition-colors">{cat.name}</Link>
+                  <Link href={`/shop?category=${cat.slug}`} prefetch={false} className="hover:text-bunny-blue transition-colors">{cat.name}</Link>
                 </li>
               ))}
-              <li><Link href="/shop?sort=newest" className="hover:text-bunny-blue transition-colors">New Arrivals</Link></li>
-              <li><Link href="/shop?sale=true" className="hover:text-bunny-error transition-colors">Sale</Link></li>
+              <li><Link href="/shop?sort=newest" prefetch={false} className="hover:text-bunny-blue transition-colors">New Arrivals</Link></li>
+              <li><Link href="/shop?sale=true" prefetch={false} className="hover:text-bunny-error transition-colors">Sale</Link></li>
             </ul>
           </div>
 
@@ -83,12 +83,12 @@ export default function Footer({
           <div className="space-y-4">
             <h4 className="font-bold uppercase tracking-wider text-sm">Help</h4>
             <ul className="space-y-2 text-sm text-bunny-text-muted">
-              <li><Link href="/gift-cards" className="hover:text-bunny-blue transition-colors">Gift Cards</Link></li>
-              <li><Link href="/track" className="hover:text-bunny-blue transition-colors">Track Order</Link></li>
-              <li><Link href="/faq" className="hover:text-bunny-blue transition-colors">FAQ & Shipping</Link></li>
-              <li><Link href="/returns" className="hover:text-bunny-blue transition-colors">Returns & Exchanges</Link></li>
-              <li><Link href="/size-guide" className="hover:text-bunny-blue transition-colors">Size Guide</Link></li>
-              <li><Link href="/contact" className="hover:text-bunny-blue transition-colors">Contact Us</Link></li>
+              <li><Link href="/gift-cards" prefetch={false} className="hover:text-bunny-blue transition-colors">Gift Cards</Link></li>
+              <li><Link href="/track" prefetch={false} className="hover:text-bunny-blue transition-colors">Track Order</Link></li>
+              <li><Link href="/faq" prefetch={false} className="hover:text-bunny-blue transition-colors">FAQ & Shipping</Link></li>
+              <li><Link href="/returns" prefetch={false} className="hover:text-bunny-blue transition-colors">Returns & Exchanges</Link></li>
+              <li><Link href="/size-guide" prefetch={false} className="hover:text-bunny-blue transition-colors">Size Guide</Link></li>
+              <li><Link href="/contact" prefetch={false} className="hover:text-bunny-blue transition-colors">Contact Us</Link></li>
             </ul>
           </div>
 

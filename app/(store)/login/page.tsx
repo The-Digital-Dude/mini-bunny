@@ -46,7 +46,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex flex-col md:flex-row animate-in fade-in duration-500">
+    <div className="min-h-[80vh] flex flex-col md:flex-row">
 
       {/* Form Side */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-12 lg:p-24 bg-bunny-surface">

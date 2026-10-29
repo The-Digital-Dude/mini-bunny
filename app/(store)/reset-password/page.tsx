@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 animate-in fade-in duration-500">
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8">
         <div>
           <h1 className="text-3xl font-heading font-bold text-bunny-navy mb-2">Set New Password</h1>

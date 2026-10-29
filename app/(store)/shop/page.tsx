@@ -24,7 +24,7 @@ export default async function ShopPage() {
   ])
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-8 md:py-12">
       {/* Top Bar */}
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-bunny-border pb-6 mb-8 gap-4">
         <Suspense fallback={<div className="h-16 bg-bunny-muted rounded-xl animate-pulse w-48" />}>
