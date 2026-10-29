@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { BabyAssistantWidget } from "@/components/store/SizeQuiz"
+import SizeGuideAssistant from "@/components/store/SizeGuideAssistant"
 import MultiDepartmentGuide from "@/components/store/MultiDepartmentGuide"
 import { Sparkles, Heart, ShieldCheck, Truck, RotateCcw } from "lucide-react"
 
@@ -32,12 +32,7 @@ export default function SizeGuidePage() {
 
       <div className="container mx-auto px-4 py-10 max-w-4xl space-y-12 -mt-6 relative z-20">
         {/* Interactive Baby Assistant */}
-        <BabyAssistantWidget
-          embedded={true}
-          onFilterShop={(size) => {
-            window.location.href = `/shop?size=${encodeURIComponent(size)}`
-          }}
-        />
+        <SizeGuideAssistant />
 
         {/* Multi-Department Tabbed Guide */}
         <MultiDepartmentGuide />
