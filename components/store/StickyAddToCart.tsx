@@ -33,14 +33,19 @@ export default function StickyAddToCart({
     // Mirror the button's disabled state and label into the sticky bar
     const sync = () => {
       const btn = document.getElementById("add-to-bag-btn") as HTMLButtonElement | null
+      const buyBtn = document.getElementById("buy-now-btn") as HTMLButtonElement | null
       if (!btn) return
-      setBtnDisabled(btn.disabled)
+      setBtnDisabled(btn.disabled || Boolean(buyBtn?.disabled))
       setBtnLabel(btn.textContent?.trim() || "Add to Bag")
     }
     sync()
 
     mutationRef.current = new MutationObserver(sync)
     mutationRef.current.observe(target, { attributes: true, childList: true, subtree: true, characterData: true })
+    const buyTarget = document.getElementById("buy-now-btn")
+    if (buyTarget) {
+      mutationRef.current.observe(buyTarget, { attributes: true, childList: true, subtree: true, characterData: true })
+    }
 
     return () => {
       observerRef.current?.disconnect()

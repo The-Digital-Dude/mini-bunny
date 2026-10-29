@@ -86,6 +86,41 @@ interface StoredProfilesData {
   activeChildId: string | null
 }
 
+// Module-level cache & request deduplication to prevent redundant network calls across multiple components
+let inFlightProfilePromise: Promise<any[] | null> | null = null
+let cachedDbProfiles: any[] | null = null
+
+export function invalidateProfileCache() {
+  cachedDbProfiles = null
+  inFlightProfilePromise = null
+}
+
+async function fetchDbProfilesDeduplicated(): Promise<any[] | null> {
+  if (cachedDbProfiles !== null) return cachedDbProfiles
+  if (inFlightProfilePromise) return inFlightProfilePromise
+
+  inFlightProfilePromise = (async () => {
+    try {
+      const res = await fetch("/api/account/baby-profile")
+      if (res.ok) {
+        const data = await res.json()
+        if (data.profiles && Array.isArray(data.profiles)) {
+          cachedDbProfiles = data.profiles
+          return data.profiles
+        }
+      }
+      cachedDbProfiles = []
+      return []
+    } catch {
+      return null
+    } finally {
+      inFlightProfilePromise = null
+    }
+  })()
+
+  return inFlightProfilePromise
+}
+
 export function useParentProfile() {
   const [children, setChildren] = useState<BabyChild[]>([])
   const [activeChildId, setActiveChildId] = useState<string | null>(null)
@@ -101,28 +136,25 @@ export function useParentProfile() {
       setIsAuthenticated(authed)
 
       if (authed) {
-        // Fetch from Postgres database
-        const res = await fetch("/api/account/baby-profile").catch(() => null)
-        if (res && res.ok) {
-          const data = await res.json()
-          if (data.profiles && Array.isArray(data.profiles) && data.profiles.length > 0) {
-            const parsedChildren = data.profiles.map((p: any) => {
-              const bStr = typeof p.birthday === "string" ? p.birthday.split("T")[0] : new Date(p.birthday).toISOString().split("T")[0]
-              const ageMeta = calculateAgeFromBirthday(bStr, p.fitPreference || "standard")
-              return {
-                id: p.id,
-                babyName: p.babyName,
-                birthday: bStr,
-                gender: (p.gender as BabyGender) || "Surprise",
-                fitPreference: (p.fitPreference as FitPreference) || "standard",
-                parentNotes: p.parentNotes || "",
-                ...ageMeta,
-              }
-            })
-            setChildren(parsedChildren)
-            setActiveChildId(parsedChildren[0]?.id ?? null)
-            return
-          }
+        // Fetch from Postgres database with in-memory deduplication
+        const profiles = await fetchDbProfilesDeduplicated()
+        if (profiles && profiles.length > 0) {
+          const parsedChildren = profiles.map((p: any) => {
+            const bStr = typeof p.birthday === "string" ? p.birthday.split("T")[0] : new Date(p.birthday).toISOString().split("T")[0]
+            const ageMeta = calculateAgeFromBirthday(bStr, p.fitPreference || "standard")
+            return {
+              id: p.id,
+              babyName: p.babyName,
+              birthday: bStr,
+              gender: (p.gender as BabyGender) || "Surprise",
+              fitPreference: (p.fitPreference as FitPreference) || "standard",
+              parentNotes: p.parentNotes || "",
+              ...ageMeta,
+            }
+          })
+          setChildren(parsedChildren)
+          setActiveChildId(parsedChildren[0]?.id ?? null)
+          return
         }
       }
 
@@ -183,6 +215,7 @@ export function useParentProfile() {
   }
 
   const persist = (updatedChildren: BabyChild[], activeId: string | null) => {
+    invalidateProfileCache()
     setChildren(updatedChildren)
     setActiveChildId(activeId)
     try {
@@ -310,6 +343,7 @@ export function useParentProfile() {
   }
 
   const clearProfile = () => {
+    invalidateProfileCache()
     setChildren([])
     setActiveChildId(null)
     try {

@@ -10,7 +10,7 @@ import { calculateBabySize } from "@/components/store/SizeQuiz"
 import NotifyMeForm from "@/components/store/NotifyMeForm"
 import SizeGuideModal from "@/components/store/SizeGuideModal"
 import WhatsAppOrderButton from "@/components/store/WhatsAppOrderButton"
-import { Columns2, Truck, Clock, Sparkles, Baby, Calculator, Check, ArrowRight, Heart, ShoppingBag, Zap } from "lucide-react"
+import { Columns2, Truck, Clock, Sparkles, Baby, Calculator, Check, ArrowRight, Heart, ShoppingBag, Zap, Loader2 } from "lucide-react"
 
 export default function VariantSelector({
   product,
@@ -42,6 +42,9 @@ export default function VariantSelector({
   const [showAssistant, setShowAssistant] = useState(false)
   const [assistantAge, setAssistantAge] = useState(6)
   const [assistantWeight, setAssistantWeight] = useState(7.5)
+  const [isAdding, setIsAdding] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   // Auto-apply saved baby profile recommendation if available
   useEffect(() => {
@@ -106,18 +109,29 @@ export default function VariantSelector({
   }
 
   const handleAddToCart = () => {
+    if (isAdding || isRedirecting) return
     const item = prepareCartItem()
     if (!item) return
+    setIsAdding(true)
     addItem(item)
     openCart()
+    setJustAdded(true)
     toast.success(`Added to bag!`, {
       description: `${product.name} — ${selectedSize} / ${selectedColor}`,
     })
+    setTimeout(() => {
+      setIsAdding(false)
+    }, 400)
+    setTimeout(() => {
+      setJustAdded(false)
+    }, 1800)
   }
 
   const handleBuyNow = () => {
+    if (isAdding || isRedirecting) return
     const item = prepareCartItem()
     if (!item) return
+    setIsRedirecting(true)
     addItem(item)
     closeCart()
     router.push("/checkout")
@@ -363,11 +377,25 @@ export default function VariantSelector({
                 id="add-to-bag-btn"
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!activeVariant}
-                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl border-2 border-[#4A8DB7] text-[#4A8DB7] bg-[#F0F7FB] hover:bg-[#4A8DB7] hover:text-white shadow-xs hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                disabled={!activeVariant || isAdding || isRedirecting}
+                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl border-2 border-[#4A8DB7] text-[#4A8DB7] bg-[#F0F7FB] hover:bg-[#4A8DB7] hover:text-white shadow-xs hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4 shrink-0" />
-                <span>{!activeVariant ? "Select Option" : "Add to Bag"}</span>
+                {isAdding ? (
+                  <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                ) : justAdded ? (
+                  <Check className="w-4 h-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <ShoppingBag className="w-4 h-4 shrink-0" />
+                )}
+                <span>
+                  {!activeVariant
+                    ? "Select Option"
+                    : isAdding
+                    ? "Adding..."
+                    : justAdded
+                    ? "Added to Bag! 🐰"
+                    : "Add to Bag"}
+                </span>
               </button>
 
               {/* Buy Now (Primary - Direct Checkout) */}
@@ -375,11 +403,21 @@ export default function VariantSelector({
                 id="buy-now-btn"
                 type="button"
                 onClick={handleBuyNow}
-                disabled={!activeVariant}
-                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1E3E5B] to-[#2C5E8A] hover:from-[#152c41] hover:to-[#1E3E5B] text-white shadow-md hover:shadow-lg shadow-[#1E3E5B]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                disabled={!activeVariant || isAdding || isRedirecting}
+                className="w-full py-4 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1E3E5B] to-[#2C5E8A] hover:from-[#152c41] hover:to-[#1E3E5B] text-white shadow-md hover:shadow-lg shadow-[#1E3E5B]/20 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
-                <Zap className="w-4 h-4 fill-amber-300 text-amber-300 shrink-0" />
-                <span>{!activeVariant ? "Select Option" : `Buy Now · ৳${variantEffectivePrice.toLocaleString()}`}</span>
+                {isRedirecting ? (
+                  <Loader2 className="w-4 h-4 shrink-0 animate-spin text-amber-300" />
+                ) : (
+                  <Zap className="w-4 h-4 fill-amber-300 text-amber-300 shrink-0" />
+                )}
+                <span>
+                  {!activeVariant
+                    ? "Select Option"
+                    : isRedirecting
+                    ? "Redirecting to Checkout..."
+                    : `Buy Now · ৳${variantEffectivePrice.toLocaleString()}`}
+                </span>
               </button>
             </div>
 

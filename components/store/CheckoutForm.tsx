@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import Image from "next/image"
 import { useCartStore } from "@/store/useCartStore"
 import { useRouter } from "next/navigation"
-import { MapPin, CreditCard, ClipboardCheck, ChevronRight, Check, Gift, MessageSquare, User, Star, Wallet, Tag, Calendar, ShoppingBag, ChevronDown, Sparkles } from "lucide-react"
+import { MapPin, CreditCard, ClipboardCheck, ChevronRight, Check, Gift, MessageSquare, User, Star, Wallet, Tag, Calendar, ShoppingBag, ChevronDown, Sparkles, Loader2, Lock } from "lucide-react"
 import { DIVISIONS, getDistricts, getAreaSuggestions } from "@/lib/bangladeshAddress"
 
 type CheckoutField = {
@@ -386,7 +386,29 @@ export default function CheckoutForm({
   const inputCls = "w-full bg-bunny-muted border border-transparent focus:border-bunny-blue focus:bg-white rounded-lg px-4 py-3 text-base md:text-sm outline-none transition-all"
 
   return (
-    <div className="flex flex-col lg:flex-row gap-10 items-start">
+    <div className="flex flex-col lg:flex-row gap-10 items-start relative">
+      {/* Full-Screen Order Processing Protection Shield */}
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-auto shadow-2xl border border-bunny-border flex flex-col items-center text-center space-y-4">
+            <div className="relative w-16 h-16 rounded-full bg-[#F0F7FB] border-2 border-[#4A8DB7]/30 flex items-center justify-center">
+              <span className="text-3xl animate-bounce">🐰</span>
+              <div className="absolute inset-0 rounded-full border-2 border-[#4A8DB7] border-t-transparent animate-spin" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-heading font-black text-lg text-[#1E3E5B]">Securing Your Order...</h3>
+              <p className="text-xs text-[#6C7A89] leading-relaxed">
+                Please do not close or refresh this page while we book your baby essentials.
+              </p>
+            </div>
+            <div className="w-full bg-[#FAF9F5] border border-[#EDE8DF] py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-[11px] font-semibold text-[#1E3E5B]">
+              <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Safe & Encrypted Checkout</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full lg:w-2/3 space-y-6">
 
         {/* Mobile Order Summary Toggle */}
@@ -1010,9 +1032,16 @@ export default function CheckoutForm({
               <button
                 onClick={handlePlaceOrder}
                 disabled={loading}
-                className="w-full py-4 bg-bunny-navy text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-bunny-blue hover:shadow-lg hover:shadow-bunny-blue/20 transition-all duration-300 rounded-full"
+                className="w-full py-4 bg-bunny-navy text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-bunny-blue hover:shadow-lg hover:shadow-bunny-blue/20 transition-all duration-300 rounded-full disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
-                {loading ? "Processing Securely..." : "Confirm & Place Order"}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    <span>Processing Securely...</span>
+                  </>
+                ) : (
+                  <span>Confirm & Place Order</span>
+                )}
               </button>
             </div>
           )}

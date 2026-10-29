@@ -121,6 +121,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", sans.variable, outfit.variable, spaceGrotesk.variable)}>
+      <head>
+        <link rel="preconnect" href="https://mjkrvbtqbfomhfqjhbny.supabase.co" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://mjkrvbtqbfomhfqjhbny.supabase.co" />
+      </head>
       <body suppressHydrationWarning className="antialiased text-bunny-text bg-bunny-bg selection:bg-bunny-pink/20 selection:text-bunny-blue-900">
         <script
           type="application/ld+json"
@@ -130,7 +134,18 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        <NextTopLoader color="#4A8DB7" showSpinner={false} />
+        <NextTopLoader
+          color="#4A8DB7"
+          initialPosition={0.12}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 12px #4A8DB7, 0 0 6px #4A8DB7"
+          zIndex={99999}
+        />
         <VercelAnalytics />
         <SpeedInsights />
         <Analytics />

@@ -2,11 +2,12 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Minus, Plus, Trash2, Tag, ChevronRight, Layers, Sparkles, Gift } from "lucide-react"
+import { ShoppingBag, Minus, Plus, Trash2, Tag, ChevronRight, Layers, Sparkles, Gift, Loader2 } from "lucide-react"
 import { useCartStore, CartItem } from "@/store/useCartStore"
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Switch } from "@/components/ui/switch"
 import GiftOptions from "@/components/store/GiftOptions"
 
@@ -106,9 +107,22 @@ export default function CartDrawer({
   itemCount?: number
   freeShippingThreshold?: number | null
 }) {
+  const router = useRouter()
   const { items, removeItem, updateQuantity, isGiftWrapped, isOpen, setIsOpen } = useCartStore()
   const [coupon, setCoupon] = useState("")
   const [useLoyalty, setUseLoyalty] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
+
+  const handleCheckoutClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (isNavigating) return
+    setIsNavigating(true)
+    router.push("/checkout")
+    setTimeout(() => {
+      setIsOpen(false)
+      setIsNavigating(false)
+    }, 800)
+  }
 
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
   const itemCount = propItemCount ?? items.reduce((acc, item) => acc + item.quantity, 0)
@@ -261,12 +275,24 @@ export default function CartDrawer({
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-1">
-              <Link href="/checkout" onClick={() => setIsOpen(false)} className="block">
-                <button className="w-full py-3.5 bg-[#4A8DB7] hover:bg-[#3d779c] text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg shadow-[#4A8DB7]/20">
-                  <span>Proceed to Checkout</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </Link>
+              <button
+                type="button"
+                onClick={handleCheckoutClick}
+                disabled={isNavigating}
+                className="w-full py-3.5 bg-[#4A8DB7] hover:bg-[#3d779c] text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg shadow-[#4A8DB7]/20 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isNavigating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    <span>Proceeding to Checkout...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Proceed to Checkout</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
               <Link
                 href="/cart"
                 onClick={() => setIsOpen(false)}
