@@ -5,7 +5,6 @@ import { Heart, ShoppingBag, Columns2 } from "lucide-react"
 import { useWishlistStore } from "@/store/useWishlistStore"
 import { useCompareStore } from "@/store/useCompareStore"
 import { toast } from "sonner"
-import FadeIn from "@/components/ui/FadeIn"
 
 export default function ProductCard({
   product,
@@ -56,7 +55,7 @@ export default function ProductCard({
   }
 
   return (
-    <FadeIn className="group relative flex flex-col gap-3">
+    <div className="group relative flex flex-col gap-3 transition-all duration-300">
       {/* Image Box */}
       <div className="relative aspect-[3/4] bg-bunny-muted rounded-xl overflow-hidden cursor-pointer">
         <Link href={`/shop/${product.slug}`} className="absolute inset-0">
@@ -157,6 +156,6 @@ export default function ProductCard({
           ))}
         </div>
       </div>
-    </FadeIn>
+    </div>
   )
 }

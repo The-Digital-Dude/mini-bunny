@@ -129,7 +129,7 @@ export default async function StoreHomepage() {
   ]
 
   return (
-    <div className="w-full bg-[#FAF9F5] text-[#1E3E5B] animate-in fade-in duration-500 overflow-x-hidden">
+    <div className="w-full bg-[#FAF9F5] text-[#1E3E5B] overflow-x-hidden">
       
       {/* ─────────────────────────────────────────────────────────────
           SECTION 1: HERO BANNER
@@ -144,95 +144,83 @@ export default async function StoreHomepage() {
             
             {/* Left Column: Messaging & CTAs */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <FadeIn delay={0.1}>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EDE8DF] text-[#4A8DB7] text-xs font-extrabold uppercase tracking-widest shadow-xs">
-                  <BunnyIcon className="w-4 h-4" />
-                  <span>Made with Love for Little Ones</span>
-                </div>
-              </FadeIn>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EDE8DF] text-[#4A8DB7] text-xs font-extrabold uppercase tracking-widest shadow-xs">
+                <BunnyIcon className="w-4 h-4" />
+                <span>Made with Love for Little Ones</span>
+              </div>
 
-              <FadeIn delay={0.2}>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black text-[#1E3E5B] tracking-tight leading-[1.12]">
-                  Cloud-Soft Comfort <br className="hidden sm:inline" />
-                  For Your <span className="text-[#4A8DB7]">Precious</span> Baby.
-                </h1>
-              </FadeIn>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black text-[#1E3E5B] tracking-tight leading-[1.12]">
+                Cloud-Soft Comfort <br className="hidden sm:inline" />
+                For Your <span className="text-[#4A8DB7]">Precious</span> Baby.
+              </h1>
 
-              <FadeIn delay={0.3}>
-                <p className="text-base sm:text-lg text-[#6C7A89] max-w-xl mx-auto lg:mx-0 font-medium leading-relaxed">
-                  Crafted from 100% GOTS certified organic cotton with flatlock anti-chafing seams, nickel-free snaps, and gentle soothing dyes for delicate newborn skin.
-                </p>
-              </FadeIn>
+              <p className="text-base sm:text-lg text-[#6C7A89] max-w-xl mx-auto lg:mx-0 font-medium leading-relaxed">
+                Crafted from 100% GOTS certified organic cotton with flatlock anti-chafing seams, nickel-free snaps, and gentle soothing dyes for delicate newborn skin.
+              </p>
 
-              <FadeIn delay={0.4}>
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                  <Link
-                    href="/shop"
-                    className="w-full sm:w-auto px-8 py-4 bg-[#4A8DB7] hover:bg-[#3d779c] text-white font-extrabold text-sm rounded-2xl shadow-md hover:shadow-lg shadow-[#4A8DB7]/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Shop New Arrivals</span>
-                  </Link>
-                  <Link
-                    href="/shop?category=gifts-bundles"
-                    className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#FFF9F0] text-[#1E3E5B] border border-[#EDE8DF] font-extrabold text-sm rounded-2xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Gift className="w-4 h-4 text-[#FF758F]" />
-                    <span>Gift Collections</span>
-                  </Link>
-                </div>
-              </FadeIn>
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                <Link
+                  href="/shop"
+                  className="w-full sm:w-auto px-8 py-4 bg-[#4A8DB7] hover:bg-[#3d779c] text-white font-extrabold text-sm rounded-2xl shadow-md hover:shadow-lg shadow-[#4A8DB7]/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Shop New Arrivals</span>
+                </Link>
+                <Link
+                  href="/shop?category=gifts-bundles"
+                  className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#FFF9F0] text-[#1E3E5B] border border-[#EDE8DF] font-extrabold text-sm rounded-2xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <Gift className="w-4 h-4 text-[#FF758F]" />
+                  <span>Gift Collections</span>
+                </Link>
+              </div>
 
               {/* Trust Chips */}
-              <FadeIn delay={0.5}>
-                <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs font-bold text-[#6C7A89]">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
-                    <span>GOTS 100% Organic</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
-                    <span>7-Day Size Exchange</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
-                    <span>Cash on Delivery across BD</span>
-                  </div>
+              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs font-bold text-[#6C7A89]">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
+                  <span>GOTS 100% Organic</span>
                 </div>
-              </FadeIn>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
+                  <span>7-Day Size Exchange</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />
+                  <span>Cash on Delivery across BD</span>
+                </div>
+              </div>
             </div>
 
             {/* Right Column: Hero Visual Showcase */}
             <div className="lg:col-span-5 relative flex items-center justify-center">
-              <FadeIn delay={0.3}>
-                <div className="relative w-72 sm:w-88 md:w-96 aspect-[4/5] rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-white">
-                  <Image
-                    src="https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop"
-                    alt="Mini Bunny Organic Cotton Babywear"
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 400px"
-                    className="object-cover"
-                  />
+              <div className="relative w-72 sm:w-88 md:w-96 aspect-[4/5] rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-white">
+                <Image
+                  src="https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop"
+                  alt="Mini Bunny Organic Cotton Babywear"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  className="object-cover"
+                />
 
-                  {/* Floating Highlight Card */}
-                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-[#EDE8DF] shadow-lg flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#FFF0F3] flex items-center justify-center shrink-0">
-                      <Heart className="w-5 h-5 text-[#FF758F] fill-[#FF758F]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-[#1E3E5B] truncate">Organic Cloud Romper</p>
-                      <p className="text-[11px] text-[#6C7A89]">Hypoallergenic · ৳850</p>
-                    </div>
-                    <Link
-                      href="/shop/organic-cotton-cloud-romper"
-                      className="text-xs font-bold text-white bg-[#4A8DB7] hover:bg-[#3d779c] px-3 py-1.5 rounded-xl transition-colors shrink-0 shadow-xs"
-                    >
-                      View
-                    </Link>
+                {/* Floating Highlight Card */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-[#EDE8DF] shadow-lg flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#FFF0F3] flex items-center justify-center shrink-0">
+                    <Heart className="w-5 h-5 text-[#FF758F] fill-[#FF758F]" />
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-[#1E3E5B] truncate">Organic Cloud Romper</p>
+                    <p className="text-[11px] text-[#6C7A89]">Hypoallergenic · ৳850</p>
+                  </div>
+                  <Link
+                    href="/shop/organic-cotton-cloud-romper"
+                    className="text-xs font-bold text-white bg-[#4A8DB7] hover:bg-[#3d779c] px-3 py-1.5 rounded-xl transition-colors shrink-0 shadow-xs"
+                  >
+                    View
+                  </Link>
                 </div>
-              </FadeIn>
+              </div>
             </div>
 
           </div>

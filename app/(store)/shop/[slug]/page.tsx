@@ -233,7 +233,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="bg-bunny-bg animate-in fade-in duration-500">
+    <div className="bg-bunny-bg">
+      {product.images[0]?.url && (
+        <link rel="preload" as="image" href={product.images[0].url} fetchPriority="high" />
+      )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <RecordView product={{ id: product.id, name: product.name, slug: product.slug, price: displayPrice, image: product.images[0]?.url }} />
