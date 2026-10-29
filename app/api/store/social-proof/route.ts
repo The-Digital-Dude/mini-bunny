@@ -37,7 +37,11 @@ export async function GET(req: Request) {
     soldToday = agg._sum.quantity || 0
   }
 
-  return NextResponse.json({ events, soldToday })
+  return NextResponse.json({ events, soldToday }, {
+    headers: {
+      "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+    },
+  })
 }
 
 function maskName(name: string): string {

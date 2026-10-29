@@ -82,14 +82,14 @@ export default async function DashboardPage() {
       })
       .catch(() => []),
     prisma.order
-      .findMany({
+      .aggregate({
         where: {
           createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
           status: { not: "CANCELLED" },
         },
-        select: { total: true },
+        _sum: { total: true },
       })
-      .catch(() => []),
+      .catch(() => ({ _sum: { total: 0 } })),
     prisma.order
       .aggregate({
         where: { createdAt: { gte: thirtyDaysAgo }, status: { not: "CANCELLED" } },
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
     .reduce((s, o) => s + Number(o.total), 0)
 
   const revenueLast7dTotal = revenueOrdersLast7d.reduce((s, o) => s + Number(o.total), 0)
-  const revenuePrev7dTotal = revenueOrdersPrev7d.reduce((s, o) => s + Number(o.total), 0)
+  const revenuePrev7dTotal = Number(revenueOrdersPrev7d._sum?.total || 0)
 
   const revenueGrowth =
     revenuePrev7dTotal > 0

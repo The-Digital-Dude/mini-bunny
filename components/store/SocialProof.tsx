@@ -18,9 +18,12 @@ export default function SocialProof({ productId }: { productId?: string }) {
 
   useEffect(() => {
     const url = productId ? `/api/store/social-proof?productId=${productId}` : `/api/store/social-proof`
-    fetch(url).then(r => r.json()).then(data => {
-      if (data.events?.length) { setEvents(data.events); setSoldToday(data.soldToday || 0) }
-    }).catch(() => {})
+    const timer = setTimeout(() => {
+      fetch(url).then(r => r.json()).then(data => {
+        if (data.events?.length) { setEvents(data.events); setSoldToday(data.soldToday || 0) }
+      }).catch(() => {})
+    }, 2500)
+    return () => clearTimeout(timer)
   }, [productId])
 
   useEffect(() => {

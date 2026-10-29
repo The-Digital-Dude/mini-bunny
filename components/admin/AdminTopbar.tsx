@@ -27,31 +27,13 @@ import { cn } from "@/lib/utils"
 
 export default function AdminTopbar({ email }: { email: string }) {
   const pathname = usePathname()
-  const { setCommandPaletteOpen, badges, fetchBadges } = useAdminStore()
+  const { setCommandPaletteOpen, badges, fetchBadges, notifications } = useAdminStore()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [notifications, setNotifications] = useState<any[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const userRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    async function loadNotifications() {
-      try {
-        const res = await fetch("/api/admin/notifications")
-        if (res.ok) {
-          const data = await res.json()
-          setNotifications(data.notifications || [])
-        }
-      } catch (err) {
-        console.warn("Failed to load notifications:", err)
-      }
-    }
-    loadNotifications()
-    const interval = setInterval(loadNotifications, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   // Close dropdowns on click outside
   useEffect(() => {

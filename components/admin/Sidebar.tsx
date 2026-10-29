@@ -211,6 +211,7 @@ export function Sidebar({ isMobile = false, onClose }: { isMobile?: boolean; onC
         <div className="px-3.5 pb-3 flex gap-1.5">
           <Link
             href="/admin/orders/new"
+            prefetch={false}
             onClick={onClose}
             className="flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg bg-white/7 border border-white/10 text-[11px] font-semibold text-slate-300 hover:bg-white/15 hover:text-white transition-all shadow-xs"
           >
@@ -219,6 +220,7 @@ export function Sidebar({ isMobile = false, onClose }: { isMobile?: boolean; onC
           </Link>
           <Link
             href="/admin/products/new"
+            prefetch={false}
             onClick={onClose}
             className="flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg bg-amber-500/15 border border-amber-500/25 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/25 hover:text-amber-200 transition-all shadow-xs"
           >
@@ -395,6 +397,7 @@ function NavLink({
   return (
     <Link
       href={item.href}
+      prefetch={false}
       onClick={onClick}
       title={isCollapsed ? item.label : undefined}
       className={cn(

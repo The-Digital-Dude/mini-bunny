@@ -18,6 +18,8 @@ interface AdminStore {
   setCommandPaletteOpen: (val: boolean) => void
   badges: AdminBadges
   setBadges: (badges: Partial<AdminBadges>) => void
+  notifications: any[]
+  setNotifications: (notifs: any[]) => void
   fetchBadges: () => Promise<void>
 }
 
@@ -52,6 +54,8 @@ export const useAdminStore = create<AdminStore>((set) => ({
     pendingGiftCards: 0,
     totalAlerts: 0,
   },
+  notifications: [],
+  setNotifications: (notifications) => set({ notifications }),
   setBadges: (badges) =>
     set((state) => ({ badges: { ...state.badges, ...badges } })),
   fetchBadges: async () => {
@@ -59,9 +63,10 @@ export const useAdminStore = create<AdminStore>((set) => ({
       const res = await fetch("/api/admin/notifications")
       if (res.ok) {
         const data = await res.json()
-        if (data.badges) {
-          set({ badges: data.badges })
-        }
+        set({
+          ...(data.badges ? { badges: data.badges } : {}),
+          ...(data.notifications ? { notifications: data.notifications } : {}),
+        })
       }
     } catch (e) {
       console.warn("Failed to fetch admin badges:", e)

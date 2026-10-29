@@ -1,3 +1,4 @@
+import { cache } from "react"
 import prisma from "@/lib/prisma"
 import { serialize } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -28,13 +29,32 @@ import Link from "next/link"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.minibunny.com"
 
 export const revalidate = 300 // ISR: revalidate product page every 5 minutes
+export const dynamicParams = true // Allow on-demand ISR for new products
+
+const getProduct = cache(async (slug: string) => {
+  return prisma.product.findUnique({
+    where: { slug, isActive: true },
+    include: {
+      category: true,
+      images: { orderBy: { sortOrder: 'asc' } },
+      variants: true,
+      brand: true,
+      addons: { orderBy: { sortOrder: 'asc' } },
+    }
+  }).catch(() => null)
+})
+
+export async function generateStaticParams() {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { slug: true },
+  }).catch(() => [])
+  return products.map((p) => ({ slug: p.slug }))
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const product = await prisma.product.findUnique({
-    where: { slug, isActive: true },
-    include: { images: { take: 1, orderBy: { sortOrder: "asc" } }, category: true },
-  }).catch(() => null)
+  const product = await getProduct(slug)
 
   if (!product) return { title: "Product Not Found" }
 
@@ -61,16 +81,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  const product = await prisma.product.findUnique({
-    where: { slug, isActive: true },
-    include: {
-      category: true,
-      images: { orderBy: { sortOrder: 'asc' } },
-      variants: true,
-      brand: true,
-      addons: { orderBy: { sortOrder: 'asc' } },
-    }
-  }).catch(() => null)
+  const product = await getProduct(slug)
 
   if (!product) {
     notFound()
