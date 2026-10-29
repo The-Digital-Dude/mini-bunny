@@ -27,6 +27,8 @@ import Link from "next/link"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.minibunny.com"
 
+export const revalidate = 300 // ISR: revalidate product page every 5 minutes
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const product = await prisma.product.findUnique({

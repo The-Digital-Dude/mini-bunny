@@ -15,6 +15,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-mono"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.minibunny.com"
 
+export const revalidate = 300 // ISR: revalidate root metadata every 5 minutes
+
 export const viewport: Viewport = {
   themeColor: "#4A8DB7",
   width: "device-width",

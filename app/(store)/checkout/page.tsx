@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import CheckoutForm from "@/components/store/CheckoutForm"
 import TrackCheckoutStart from "@/components/store/TrackCheckoutStart"
 import { ShieldCheck } from "lucide-react"

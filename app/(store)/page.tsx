@@ -38,6 +38,8 @@ function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
   )
 }
 
+export const revalidate = 300 // ISR: revalidate homepage every 5 minutes
+
 export const metadata = {
   title: "Mini Bunny — Premium Baby & Kids Boutique | Made with Love for Little Ones",
   description: "Discover ultra-soft GOTS certified organic cotton babywear, sleepsuits, swaddles, feeding sets, and luxury baby shower gift hampers.",

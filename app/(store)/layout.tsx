@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+export const revalidate = 300 // ISR: cache store layout and revalidate every 5 minutes
 
 import Navbar from "@/components/store/Navbar";
 import Footer from "@/components/store/Footer";

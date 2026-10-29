@@ -5,6 +5,8 @@ import ShopProductGrid from "@/components/store/ShopProductGrid"
 import ShopHeading from "@/components/store/ShopHeading"
 import { Suspense } from "react"
 
+export const revalidate = 300 // ISR: revalidate catalog every 5 minutes
+
 export default async function ShopPage() {
   const [categories, brands] = await Promise.all([
     prisma.category.findMany({
