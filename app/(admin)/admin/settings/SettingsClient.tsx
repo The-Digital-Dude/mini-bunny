@@ -528,7 +528,7 @@ export function SettingsClient({
                     <select
                       value={selectedTemplateKey}
                       onChange={(e) => handleSelectTemplate(e.target.value)}
-                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all min-w-[240px]"
+                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all min-w-0 sm:min-w-[240px]"
                     >
                       <optgroup label="🛍️ Customer Orders">
                         <option value="order_confirmation">1. Order Confirmed (Itemized + COD)</option>

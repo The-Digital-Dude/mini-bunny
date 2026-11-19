@@ -54,48 +54,67 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
-    // Sync variants if provided
+    // Sync variants if provided: update existing, create new, remove deleted
     if (Array.isArray(variants)) {
-      // Fetch current stock to detect 0→positive transitions
       const variantIds = variants.filter((v: any) => v.id).map((v: any) => v.id)
-      const currentVariants = variantIds.length > 0
-        ? await prisma.productVariant.findMany({ where: { id: { in: variantIds } }, select: { id: true, stock: true } })
-        : []
-      const currentStockMap = Object.fromEntries(currentVariants.map((v) => [v.id, v.stock]))
+      const existing = await prisma.productVariant.findMany({ where: { productId: id }, select: { id: true, stock: true } })
+      const currentStockMap = Object.fromEntries(existing.map((v) => [v.id, v.stock]))
+      const ts = Date.now()
+      const num = (x: any) => (x === "" || x === null || x === undefined || Number(x) === 0 ? null : Number(x))
 
-      for (const v of variants) {
-        if (v.id) {
+      for (const [i, v] of variants.entries()) {
+        const data = {
+          size: v.size,
+          color: v.color,
+          colorHex: v.colorHex || null,
+          stock: Number(v.stock) || 0,
+          price: num(v.price),
+          comparePrice: num(v.comparePrice),
+        }
+        if (v.id && currentStockMap[v.id] !== undefined) {
+          const prevStock = currentStockMap[v.id] ?? 0
           await prisma.productVariant.update({
             where: { id: v.id },
-            data: { size: v.size, color: v.color, colorHex: v.colorHex || null, sku: v.sku, stock: v.stock, price: v.price || null, comparePrice: v.comparePrice || null },
-          }).catch(() => {})
-
-          // Notify back-in-stock subscribers
-          if (v.stock > 0 && (currentStockMap[v.id] ?? 0) === 0) {
-            notifyStockAlerts(v.id).catch(() => {})
-          }
-
-          // Alert admin when stock drops to low threshold (1–5)
-          const prevStock = currentStockMap[v.id] ?? 0
-          if (v.stock > 0 && v.stock <= 5 && prevStock > 5) {
+            data: { ...data, ...(v.sku?.trim() ? { sku: v.sku.trim() } : {}) },
+          })
+          if (data.stock > 0 && prevStock === 0) notifyStockAlerts(v.id).catch(() => {})
+          if (data.stock > 0 && data.stock <= 5 && prevStock > 5) {
             sendAdminLowStockAlert({
               productName: product.name,
               sku: v.sku || v.id,
               size: v.size,
               color: v.color,
-              stock: v.stock,
+              stock: data.stock,
               productId: id,
             }).catch(() => {})
           }
+        } else {
+          await prisma.productVariant.create({
+            data: {
+              ...data,
+              productId: id,
+              sku: v.sku?.trim() || `${product.slug}-${v.size || "OS"}-${v.color || "DEF"}-${ts}-${i}`.toUpperCase().replace(/\s+/g, "-"),
+            },
+          })
         }
+      }
+
+      // Remove variants the admin deleted (skip ones that have order history)
+      const removed = existing.filter((v) => !variantIds.includes(v.id))
+      for (const v of removed) {
+        await prisma.productVariant.delete({ where: { id: v.id } }).catch(() => {})
       }
     }
 
-    revalidatePath("/")
+    revalidatePath("/", "layout")
     revalidatePath("/shop")
+    revalidatePath("/shop/[slug]", "page")
     revalidatePath(`/shop/${product.slug}`)
     return NextResponse.json(product)
   } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json({ error: "Slug or SKU already exists. Please use a unique value." }, { status: 409 })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
@@ -106,12 +125,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { id } = await params
   try {
     await prisma.product.delete({ where: { id } })
+    revalidatePath("/", "layout")
     return NextResponse.json({ success: true })
   } catch (error: any) {
     // P2003 = foreign key constraint (product has orders)
     if (error.code === "P2003") {
       // Soft-delete: deactivate instead of deleting
       await prisma.product.update({ where: { id }, data: { isActive: false } })
+      revalidatePath("/", "layout")
       return NextResponse.json({ success: true, softDeleted: true, message: "Product has orders — it has been deactivated instead of deleted." })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })

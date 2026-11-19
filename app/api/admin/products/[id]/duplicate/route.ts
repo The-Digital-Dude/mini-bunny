@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 
@@ -40,11 +41,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         create: source.images.map((img) => ({ url: img.url, alt: img.alt, sortOrder: img.sortOrder })),
       },
       variants: {
-        create: source.variants.map((v) => ({
+        create: source.variants.map((v, i) => ({
           size: v.size,
           color: v.color,
           colorHex: v.colorHex,
-          sku: `${v.sku}-COPY-${Date.now()}`,
+          sku: `${v.sku}-COPY-${Date.now()}-${i}`,
           stock: 0,
           price: v.price,
           comparePrice: v.comparePrice && Number(v.comparePrice) > 0 ? v.comparePrice : null,
@@ -54,5 +55,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
 
-  return NextResponse.json({ product: copy })
+  revalidatePath("/admin/products")
+  return NextResponse.json({ product: copy, id: copy.id })
 }

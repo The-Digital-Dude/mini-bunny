@@ -1,10 +1,11 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 import { notifyStockAlerts } from "@/lib/stockAlert"
 
 // PATCH body: { updates: [{ variantId, stock?, price?, costPrice?, sku? }] }
-export async function PATCH(req: NextRequest) {
+async function PATCH_handler(req: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -65,3 +66,5 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err.message || "Failed to update inventory" }, { status: 500 })
   }
 }
+
+export const PATCH = withStoreRevalidate(PATCH_handler)

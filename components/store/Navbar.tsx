@@ -299,7 +299,7 @@ export default function Navbar({
           {/* User, Child Switcher & Cart Icons */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             {/* Child / Baby Profile Quick Switcher (Desktop XL only) */}
-            <ChildSwitcher className="hidden xl:inline-flex" />
+            <div className="hidden xl:block"><ChildSwitcher /></div>
 
             <button
               onClick={() => setSearchOpen(true)}

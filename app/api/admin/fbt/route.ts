@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ pairs })
 }
 
-export async function POST(req: NextRequest) {
+async function POST_handler(req: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ pair })
 }
 
-export async function DELETE(req: NextRequest) {
+async function DELETE_handler(req: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -42,3 +43,6 @@ export async function DELETE(req: NextRequest) {
   await prisma.frequentlyBoughtTogether.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withStoreRevalidate(POST_handler)
+export const DELETE = withStoreRevalidate(DELETE_handler)

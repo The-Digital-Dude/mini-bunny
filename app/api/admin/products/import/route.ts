@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
@@ -6,7 +7,7 @@ import { requireAdmin } from "@/lib/auth"
 // Body: { rows: ParsedRow[], dryRun: boolean }
 // ParsedRow: { name, slug, price, comparePrice, category, tags, sku, size, color, stock, costPrice, imageUrl }
 
-export async function POST(req: Request) {
+async function POST_handler(req: Request) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -92,3 +93,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ dryRun, total: rows.length, created, skipped, errors, results })
 }
+
+export const POST = withStoreRevalidate(POST_handler)

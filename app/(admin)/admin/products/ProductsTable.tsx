@@ -165,7 +165,7 @@ export default function ProductsTable({ products }: { products: any[] }) {
                 <td className="py-3.5 pr-5 pl-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <Link
-                      href={`/products/${product.slug || product.id}`}
+                      href={`/shop/${product.slug}`}
                       target="_blank"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 transition-all shadow-2xs"
                       title="View on storefront"

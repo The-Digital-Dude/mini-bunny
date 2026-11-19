@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
   return NextResponse.json(rates)
 }
 
-export async function POST(req: Request) {
+async function POST_handler(req: Request) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const data = await req.json()
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   return NextResponse.json(rate)
 }
 
-export async function DELETE(req: Request) {
+async function DELETE_handler(req: Request) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { searchParams } = new URL(req.url)
@@ -39,3 +40,6 @@ export async function DELETE(req: Request) {
   await prisma.shippingRate.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withStoreRevalidate(POST_handler)
+export const DELETE = withStoreRevalidate(DELETE_handler)

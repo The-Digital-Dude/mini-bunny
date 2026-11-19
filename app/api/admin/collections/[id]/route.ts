@@ -1,8 +1,9 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function PATCH_handler(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -23,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ collection })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function DELETE_handler(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -31,3 +32,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   await prisma.smartCollection.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
+
+export const PATCH = withStoreRevalidate(PATCH_handler)
+export const DELETE = withStoreRevalidate(DELETE_handler)

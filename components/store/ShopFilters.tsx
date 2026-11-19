@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Filter, X } from "lucide-react"
 import SizeQuiz from "./SizeQuiz"
@@ -43,14 +43,18 @@ export default function ShopFilters({ categories, brands }: { categories: Catego
   const [minPrice, setMinPrice] = useState(minPriceParam)
   const [maxPrice, setMaxPrice] = useState(maxPriceParam)
 
-  const hasActiveFilters = !!(category || brandId || size || color || minPriceParam || maxPriceParam || sale)
+  // Keep price inputs in sync with the URL (e.g. after "Clear all" or back/forward)
+  useEffect(() => { setMinPrice(minPriceParam); setMaxPrice(maxPriceParam) }, [minPriceParam, maxPriceParam])
+
+  const hasActiveFilters = !!(category || brandId || size || color || minPriceParam || maxPriceParam || sale || sp.get("take"))
 
   function buildUrl(overrides: Record<string, string>) {
     const p = new URLSearchParams(sp.toString())
     for (const [k, v] of Object.entries(overrides)) {
       if (v) p.set(k, v); else p.delete(k)
     }
-    return `/shop?${p.toString()}`
+    const qs = p.toString()
+    return qs ? `/shop?${qs}` : "/shop"
   }
 
   function navigate(overrides: Record<string, string>) {
@@ -62,10 +66,12 @@ export default function ShopFilters({ categories, brands }: { categories: Catego
 
   function clearAll() {
     setMinPrice(""); setMaxPrice("")
+    const p = new URLSearchParams()
+    if (search) p.set("search", search)
+    const qs = p.toString()
+    const target = qs ? `/shop?${qs}` : "/shop"
     startTransition(() => {
-      const p = new URLSearchParams()
-      if (search) p.set("search", search)
-      router.replace(`/shop?${p.toString()}`, { scroll: false })
+      router.replace(target, { scroll: false })
     })
     setMobileOpen(false)
   }

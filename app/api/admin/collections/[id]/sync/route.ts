@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
@@ -32,7 +33,7 @@ async function matchProducts(rules: Rule[]): Promise<string[]> {
     .map((p) => p.id)
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function POST_handler(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -54,3 +55,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   return NextResponse.json({ matched: productIds.length })
 }
+
+export const POST = withStoreRevalidate(POST_handler)

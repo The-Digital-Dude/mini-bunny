@@ -69,7 +69,8 @@ export default function ShippingLabelsClient({ labels: initialLabels, pendingOrd
           {pendingOrders.length === 0 ? (
             <p className="px-6 py-12 text-center text-muted-foreground">No confirmed orders awaiting labels.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="w-full overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="bg-slate-50 border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Order</th>
@@ -120,6 +121,7 @@ export default function ShippingLabelsClient({ labels: initialLabels, pendingOrd
                 ))}
               </tbody>
             </table>
+</div>
           )}
         </div>
       )}
@@ -129,7 +131,8 @@ export default function ShippingLabelsClient({ labels: initialLabels, pendingOrd
           {labels.length === 0 ? (
             <p className="px-6 py-12 text-center text-muted-foreground">No labels created yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="w-full overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="bg-slate-50 border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Order</th>
@@ -177,6 +180,7 @@ export default function ShippingLabelsClient({ labels: initialLabels, pendingOrd
                 ))}
               </tbody>
             </table>
+</div>
           )}
         </div>
       )}
