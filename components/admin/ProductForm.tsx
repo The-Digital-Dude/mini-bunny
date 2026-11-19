@@ -31,6 +31,7 @@ const productSchema = z.object({
   videoUrl: z.string().nullish(),
   sizeChartImage: z.string().nullish(),
   variants: z.array(z.object({
+    id: z.string().nullish(),
     size: z.string().min(1),
     color: z.string().min(1),
     colorHex: z.string().nullish(),
@@ -295,7 +296,7 @@ export default function ProductForm({ initialData, categories }: { initialData?:
   return (
     <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="min-h-screen bg-gray-50" noValidate>
       {/* Top bar */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
             <ArrowLeft className="w-4 h-4" />
@@ -324,7 +325,7 @@ export default function ProductForm({ initialData, categories }: { initialData?:
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Left — main content */}
@@ -462,7 +463,8 @@ export default function ProductForm({ initialData, categories }: { initialData?:
                     ))}
                   </div>
 
-                  <div className="rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="rounded-xl border border-gray-200 overflow-x-auto">
+                   <div className="min-w-[720px]">
                     {/* Header */}
                     <div className="grid grid-cols-[1fr_1fr_36px_1fr_80px_80px_80px_36px] gap-0 bg-gray-50 border-b border-gray-200">
                       {["Age / Size", "Color", "Hex", "SKU", "Stock", "Price", "Was", ""].map((h, i) => (
@@ -513,6 +515,7 @@ export default function ProductForm({ initialData, categories }: { initialData?:
                     {variantFields.length === 0 && (
                       <div className="py-8 text-center text-xs text-gray-400">No baby sizes yet — click one of the quick size presets above</div>
                     )}
+                   </div>
                   </div>
                 </div>
               </div>

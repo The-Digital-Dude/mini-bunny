@@ -43,7 +43,8 @@ export default function DraftOrdersClient({ drafts }: { drafts: Draft[] }) {
       <h1 className="text-2xl font-bold mb-6">Draft Orders</h1>
 
       <div className="bg-white border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="w-full overflow-x-auto">
+<table className="w-full text-sm">
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">ID</th>
@@ -76,6 +77,7 @@ export default function DraftOrdersClient({ drafts }: { drafts: Draft[] }) {
             ))}
           </tbody>
         </table>
+</div>
         {items.length === 0 && <p className="text-center py-8 text-gray-400 text-sm">No draft orders yet.</p>}
       </div>
     </div>

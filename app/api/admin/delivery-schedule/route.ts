@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
@@ -7,7 +8,7 @@ export async function GET() {
   return NextResponse.json(schedules)
 }
 
-export async function PUT(req: Request) {
+async function PUT_handler(req: Request) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const data = await req.json()
@@ -30,3 +31,5 @@ export async function PUT(req: Request) {
   })
   return NextResponse.json(schedule)
 }
+
+export const PUT = withStoreRevalidate(PUT_handler)

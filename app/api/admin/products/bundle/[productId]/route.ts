@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
@@ -35,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ product
 // POST /api/admin/products/bundle/[productId]
 // Body: { discountPct?: number, companionProductIds: string[] }
 // Creates or updates the bundle, syncing BundleItem rows to match companionProductIds
-export async function POST(req: Request, { params }: { params: Promise<{ productId: string }> }) {
+async function POST_handler(req: Request, { params }: { params: Promise<{ productId: string }> }) {
   const { error } = await requireAdmin()
   if (error) return error
   const { productId } = await params
@@ -96,7 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
 
 // DELETE /api/admin/products/bundle/[productId]
 // Deletes the entire bundle (and unlinks the product)
-export async function DELETE(_req: Request, { params }: { params: Promise<{ productId: string }> }) {
+async function DELETE_handler(_req: Request, { params }: { params: Promise<{ productId: string }> }) {
   const { error } = await requireAdmin()
   if (error) return error
   const { productId } = await params
@@ -108,3 +109,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ prod
   await prisma.bundle.delete({ where: { id: product.bundleId } })
   return NextResponse.json({ success: true })
 }
+
+export const POST = withStoreRevalidate(POST_handler)
+export const DELETE = withStoreRevalidate(DELETE_handler)

@@ -1,9 +1,10 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 import { logAudit } from "@/lib/auditLog"
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PATCH_handler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, session } = await requireAdmin()
   if (error) return error
 
@@ -43,3 +44,5 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json({ review })
 }
+
+export const PATCH = withStoreRevalidate(PATCH_handler)

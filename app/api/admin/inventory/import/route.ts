@@ -1,10 +1,11 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(req: NextRequest) {
+async function POST_handler(req: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -125,3 +126,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message || "Failed to process CSV import" }, { status: 500 })
   }
 }
+
+export const POST = withStoreRevalidate(POST_handler)

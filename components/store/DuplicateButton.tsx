@@ -9,11 +9,21 @@ export default function DuplicateButton({ productId }: { productId: string }) {
   const handleDuplicate = async () => {
     if (!confirm("Duplicate this product?")) return
     setLoading(true)
-    const res = await fetch(`/api/admin/products/${productId}/duplicate`, { method: "POST" })
-    const data = await res.json()
-    setLoading(false)
-    if (data.id) router.push(`/admin/products/${data.id}/edit`)
-    else alert(data.error ?? "Failed to duplicate")
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/duplicate`, { method: "POST" })
+      const data = await res.json().catch(() => ({}))
+      const newId = data?.product?.id ?? data?.id
+      if (res.ok && newId) {
+        router.push(`/admin/products/${newId}`)
+        router.refresh()
+        return
+      }
+      alert(data?.error ?? "Failed to duplicate")
+    } catch {
+      alert("Failed to duplicate")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

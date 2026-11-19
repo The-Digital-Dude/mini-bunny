@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -28,24 +28,23 @@ export default function ShopProductGrid() {
 
   const view = sp.get("view") || "grid"
 
-  const fetchProducts = useCallback(async () => {
+  const query = sp.toString()
+
+  useEffect(() => {
+    const controller = new AbortController()
     setLoading(true)
-    try {
-      const res = await fetch(`/api/store/products?${sp.toString()}`)
-      if (res.ok) {
+    fetch(`/api/store/products?${query}`, { signal: controller.signal, cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) return
         const data = await res.json()
         setProducts(data.products)
         setTotal(data.total)
         setHasMore(data.hasMore)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [sp.toString()]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+      })
+      .catch(() => {})
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
+  }, [query])
 
   const take = parseInt(sp.get("take") || "12")
 

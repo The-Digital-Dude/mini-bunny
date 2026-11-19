@@ -253,13 +253,15 @@ export default async function StoreHomepage() {
                 textClass: "text-[#4A8DB7]",
               }
               const img = cat.image || "https://images.unsplash.com/photo-1522771930-78848d9293e8?w=600&auto=format&fit=crop"
+              const catIds = new Set<string>([cat.id, ...(cat.children || []).map((c: any) => c.id)])
+              const catProducts = serializedProducts.filter((p: any) => catIds.has(p.categoryId)).slice(0, 3)
 
               return (
-                <Link
+                <div
                   key={cat.id}
-                  href={`/shop?category=${cat.slug}`}
                   className="group relative flex flex-col rounded-3xl overflow-hidden border border-[#EDE8DF] bg-[#FAF9F5] hover:border-[#4A8DB7] hover:shadow-xl transition-all duration-300"
                 >
+                <Link href={`/shop?category=${cat.slug}`} className="flex flex-col flex-1">
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-white">
                     <Image
                       src={img}
@@ -302,6 +304,31 @@ export default async function StoreHomepage() {
                     </div>
                   </div>
                 </Link>
+
+                {catProducts.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+                    {catProducts.map((p: any) => (
+                      <Link
+                        key={p.id}
+                        href={`/shop/${p.slug}`}
+                        className="group/mini block min-w-0 rounded-xl bg-white border border-[#EDE8DF] p-1.5 hover:border-[#4A8DB7] transition-colors"
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-[#F5F3EE]">
+                          <Image
+                            src={p.images?.[0]?.url || "/placeholder.jpg"}
+                            alt={p.name}
+                            fill
+                            sizes="(max-width: 640px) 30vw, 10vw"
+                            className="object-cover group-hover/mini:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <p className="mt-1.5 text-[11px] font-medium text-[#1E3E5B] line-clamp-1">{p.name}</p>
+                        <p className="text-[11px] font-mono text-[#4A8DB7]">৳{Number(p.price).toLocaleString()}</p>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                </div>
               )
             })}
           </div>

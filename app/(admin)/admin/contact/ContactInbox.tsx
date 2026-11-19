@@ -47,9 +47,9 @@ export default function ContactInbox({ messages: initial }: { messages: Message[
   }
 
   return (
-    <div className="flex gap-0 border rounded-lg overflow-hidden min-h-[500px]">
+    <div className="flex flex-col md:flex-row gap-0 border rounded-lg overflow-hidden md:min-h-[500px]">
       {/* List */}
-      <div className="w-80 border-r shrink-0 overflow-y-auto">
+      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r shrink-0 overflow-y-auto max-h-72 md:max-h-none">
         {messages.length === 0 && (
           <p className="text-muted-foreground text-center py-12 text-sm">No messages</p>
         )}
@@ -78,7 +78,7 @@ export default function ContactInbox({ messages: initial }: { messages: Message[
       </div>
 
       {/* Detail */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 min-w-0 p-4 sm:p-6">
         {!selected ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Select a message

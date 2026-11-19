@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
@@ -13,7 +14,7 @@ export async function GET() {
   return NextResponse.json({ collections })
 }
 
-export async function POST(req: NextRequest) {
+async function POST_handler(req: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -27,3 +28,5 @@ export async function POST(req: NextRequest) {
   })
   return NextResponse.json({ collection })
 }
+
+export const POST = withStoreRevalidate(POST_handler)

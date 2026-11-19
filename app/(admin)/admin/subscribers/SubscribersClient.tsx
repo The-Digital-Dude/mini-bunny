@@ -76,7 +76,8 @@ export default function SubscribersClient({ data }: { data: any[] }) {
 
       {/* Table */}
       <div className="rounded-xl border bg-white overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="w-full overflow-x-auto">
+<table className="w-full text-sm">
           <thead className="bg-slate-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
@@ -124,6 +125,7 @@ export default function SubscribersClient({ data }: { data: any[] }) {
             ))}
           </tbody>
         </table>
+</div>
       </div>
     </div>
   )

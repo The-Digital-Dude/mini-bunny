@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
   if (size || color) {
     where.variants = { some: {} }
     if (size)  where.variants.some.size  = size
-    if (color) where.variants.some.color = color
+    if (color) where.variants.some.color = { equals: color, mode: "insensitive" }
   }
 
   const [products, total] = await Promise.all([

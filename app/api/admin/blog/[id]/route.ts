@@ -1,3 +1,4 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
@@ -9,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(post)
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PUT_handler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
@@ -33,10 +34,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(post)
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function DELETE_handler(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
   await prisma.blogPost.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
+
+export const PUT = withStoreRevalidate(PUT_handler)
+export const DELETE = withStoreRevalidate(DELETE_handler)

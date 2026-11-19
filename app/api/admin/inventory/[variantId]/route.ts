@@ -1,8 +1,9 @@
+import { withStoreRevalidate } from "@/lib/revalidateStore"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/adminAuth"
 
-export async function PATCH(
+async function PATCH_handler(
   request: Request,
   { params }: { params: Promise<{ variantId: string }> }
 ) {
@@ -27,3 +28,5 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
+
+export const PATCH = withStoreRevalidate(PATCH_handler)
